@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terratjo Booking Portal</title>
+    <meta name="description" content="Terratjo Room Booking Management Portal">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-box logo-clickable" id="sidebar-logo-box" title="Click to change logo"><i data-lucide="home"></i></div>
+            <h2 id="sidebar-brand-name">Terratjo Room</h2>
+            <span class="subtitle">Booking Portal</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3>BOOKINGS</h3>
+                <a href="#" class="nav-item active" data-page="calendar"><i data-lucide="calendar"></i> Calendar</a>
+                <a href="#" class="nav-item" data-page="all-bookings"><i data-lucide="list"></i> All Bookings</a>
+            </div>
+            <div class="nav-section">
+                <h3>DOCUMENTS</h3>
+                <a href="#" class="nav-item" data-page="invoices"><i data-lucide="file-text"></i> Invoices &amp; Quotes</a>
+            </div>
+            <div class="nav-section">
+                <h3>ANALYTICS</h3>
+                <a href="#" class="nav-item" data-page="reports"><i data-lucide="bar-chart-2"></i> Reports</a>
+            </div>
+            <div class="nav-section">
+                <h3>PROPERTY</h3>
+                <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> Inventory</a>
+                <a href="#" class="nav-item" data-page="settings"><i data-lucide="settings"></i> Settings</a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <span>Terratjo Room · v4.0</span>
+            <button class="btn-logout" onclick="logout()" title="Sign Out"><i data-lucide="log-out"></i></button>
+        </div>
+    </aside>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+
+        <!-- TOP BAR -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <h1 class="page-title" id="topbar-brand">Terratjo Booking Portal</h1>
+                <span class="location-badge" id="topbar-location">Taman Melati Apt - Yogyakarta</span>
+            </div>
+            <div class="top-bar-right">
+                <button class="btn btn-primary" id="btn-new-booking"><i data-lucide="calendar-plus"></i> New Booking</button>
+                <button class="btn btn-secondary" id="btn-new-quotation"><i data-lucide="file-plus"></i> New Quotation</button>
+            </div>
+        </header>
+
+        <!-- PAGE: CALENDAR -->
+        <main class="page-content" id="page-calendar">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="month-selector">
+                        <button class="btn-icon" id="btn-prev-month"><i data-lucide="chevron-left"></i></button>
+                        <h2 id="current-month-display">May 2026</h2>
+                        <button class="btn-icon" id="btn-next-month"><i data-lucide="chevron-right"></i></button>
+                    </div>
+                    <div class="legend">
+                        <span class="legend-item"><span class="dot dot-confirmed"></span> Confirmed</span>
+                        <span class="legend-item"><span class="dot dot-awaiting"></span> Awaiting Payment</span>
+                        <span class="legend-item"><span class="dot dot-quotation"></span> Quotation</span>
+                        <span class="legend-item"><span class="dot dot-cancelled"></span> Cancelled/Expired</span>
+                    </div>
+                </div>
+                <div class="calendar-grid">
+                    <div class="weekday-headers">
+                        <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                    </div>
+                    <div class="days-grid" id="days-grid"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: ALL BOOKINGS -->
+        <main class="page-content hidden" id="page-all-bookings">
+            <div class="section-container">
+                <div class="section-header-bar">
+                    <div class="tab-group" id="bookings-tabs">
+                        <button class="tab-btn active" data-filter="all">All</button>
+                        <button class="tab-btn" data-filter="confirmed">Confirmed</button>
+                        <button class="tab-btn" data-filter="awaiting">Awaiting Payment</button>
+                        <button class="tab-btn" data-filter="quotation">Quotations</button>
+                        <button class="tab-btn" data-filter="cancelled">Cancelled / Expired</button>
+                    </div>
+                </div>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>#</th><th>GUEST</th><th>ROOM</th>
+                            <th>CHECK-IN</th><th>CHECK-OUT</th><th>NIGHTS</th>
+                            <th>TOTAL</th><th>STATUS</th><th>ACTION</th>
+                        </tr></thead>
+                        <tbody id="bookings-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: INVOICES & QUOTES -->
+        <main class="page-content hidden" id="page-invoices">
+            <div class="section-container">
+                <div class="section-header-bar">
+                    <div class="tab-group" id="invoices-tabs">
+                        <button class="tab-btn active" data-filter="all">All</button>
+                        <button class="tab-btn" data-filter="invoice">Invoices</button>
+                        <button class="tab-btn" data-filter="quotation">Quotations</button>
+                    </div>
+                </div>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>#</th><th>GUEST</th><th>DATES</th><th>NIGHTS</th>
+                            <th>TOTAL</th><th>TYPE</th><th>STATUS</th><th>ACTION</th>
+                        </tr></thead>
+                        <tbody id="invoices-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: REPORTS -->
+        <main class="page-content hidden" id="page-reports">
+            <div class="section-container">
+                <div class="reports-stat-cards" id="reports-stat-cards"></div>
+                <div class="reports-table-card">
+                    <div class="reports-table-header">
+                        <h3>Transaction Overview</h3>
+                        <div class="tab-group" id="reports-tabs">
+                            <button class="tab-btn active" data-filter="all">All</button>
+                            <button class="tab-btn" data-filter="booking">Bookings</button>
+                            <button class="tab-btn" data-filter="quotation">Quotations</button>
+                        </div>
+                    </div>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead><tr>
+                                <th>#</th><th>GUEST</th><th>TYPE</th><th>ROOM</th>
+                                <th>CHECK-IN</th><th>CHECK-OUT</th><th>NIGHTS</th>
+                                <th>RATE/NIGHT</th><th>TOTAL</th>
+                            </tr></thead>
+                            <tbody id="reports-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="reports-totals" id="reports-totals"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: INVENTORY -->
+        <main class="page-content hidden" id="page-inventory">
+            <div class="section-container">
+                <div class="inventory-header">
+                    <h2>Rooms / Inventory</h2>
+                    <button class="btn btn-primary" id="btn-add-room"><i data-lucide="plus"></i> Add Room</button>
+                </div>
+                <div class="rooms-list" id="rooms-list"></div>
+            </div>
+        </main>
+
+        <!-- PAGE: SETTINGS -->
+        <main class="page-content hidden" id="page-settings">
+            <div class="section-container settings-container">
+                <h2 class="section-title">Property Settings</h2>
+                <p class="section-subtitle">These details will appear on all invoices and quotations.</p>
+                <div class="settings-card">
+                    <div class="settings-form">
+                        <!-- Logo Upload -->
+                        <div class="logo-upload-group">
+                            <label>PROPERTY LOGO</label>
+                            <div class="logo-upload-area logo-clickable" id="settings-logo-box" title="Click to upload logo">
+                                <div class="logo-upload-circle" id="settings-logo-circle"><i data-lucide="home"></i></div>
+                                <div class="logo-upload-hint">
+                                    <span class="logo-upload-hint-title">Click to upload logo</span>
+                                    <span class="logo-upload-hint-sub">PNG, JPG or SVG · Recommended 200×200px</span>
+                                    <button type="button" class="btn btn-outline btn-sm" id="btn-remove-logo" style="display:none" onclick="event.stopPropagation();removeLogo()">Remove Logo</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Brand / Property Name</label>
+                                <input type="text" id="setting-brand" value="Terratjo Room">
+                            </div>
+                            <div class="form-group">
+                                <label>Tagline / Sub-brand</label>
+                                <input type="text" id="setting-tagline" value="Booking Portal">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Location / Address (Top Bar)</label>
+                            <input type="text" id="setting-location" value="Taman Melati Apt - Yogyakarta">
+                        </div>
+                        <div class="form-group">
+                            <label>Invoice Header Address</label>
+                            <input type="text" id="setting-inv-address" value="at Taman Melati Apartment Yogyakarta">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Contact Email</label>
+                                <input type="email" id="setting-email" value="info@terratjo.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Phone</label>
+                                <input type="text" id="setting-phone" value="+62 821-9999-1161">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Bank Name</label>
+                                <input type="text" id="setting-bank-name" value="Bank Central Asia (BCA)">
+                            </div>
+                            <div class="form-group">
+                                <label>Account Name</label>
+                                <input type="text" id="setting-acc-name" value="Thomas Vialdo Resky Lamandau">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number</label>
+                            <input type="text" id="setting-acc-no" value="060-132-7499">
+                        </div>
+                        <div class="form-group">
+                            <label>Social / Website</label>
+                            <input type="text" id="setting-social" value="@terratjo">
+                        </div>
+                        <div class="form-group">
+                            <label>Thank You Message (Invoice Footer)</label>
+                            <textarea id="setting-notes" rows="3">Thank you for choosing Terratjo Room at Taman Melati Apartment Yogyakarta</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="btn-save-settings"><i data-lucide="save"></i> Save Settings</button>
+                        </div>
+                    </div>
+                    <div class="settings-preview-box">
+                        <h4>Invoice Header Preview</h4>
+                        <div class="settings-inv-preview">
+                            <div class="sip-logo logo-clickable" id="sip-logo-box" title="Click to change logo"><i data-lucide="home"></i></div>
+                            <div>
+                                <strong id="sip-brand">Terratjo Room</strong>
+                                <small id="sip-address">at Taman Melati Apartment Yogyakarta</small>
+                            </div>
+                        </div>
+                        <div class="settings-contact-preview">
+                            <span id="sip-email">info@terratjo.com</span>
+                            <span id="sip-phone">+62 821-9999-1161</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div><!-- end page-wrapper -->
+</div><!-- end app-container -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Login Overlay -->
+<div id="login-overlay" class="modal-overlay active">
+    <div class="modal form-modal login-modal">
+        <div class="login-modal-brand">
+            <div class="login-logo"><i data-lucide="home"></i></div>
+            <h2>Terratjo Room</h2>
+            <p>Booking Portal — Staff Access</p>
+        </div>
+        <form id="login-form" class="modal-body">
+            <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="Enter username" required autocomplete="username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="Enter password" required autocomplete="current-password"></div>
+            <div class="form-actions" style="margin-top:8px;">
+                <button type="submit" class="btn btn-primary full-width">Sign In <i data-lucide="arrow-right"></i></button>
+            </div>
+            <p style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-light)">Default: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">admin / admin123</code></p>
+        </form>
+    </div>
+</div>
+
+<!-- Booking / Quotation FORM Modal -->
+<div class="modal-overlay" id="form-modal">
+    <div class="modal form-modal">
+        <div class="modal-header">
+            <h3 id="form-modal-title">New Booking</h3>
+            <button class="btn-icon" id="btn-close-form"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="booking-form" autocomplete="off">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GUEST FULL NAME</label>
+                        <input type="text" id="form-name" placeholder="e.g. Maria Santos" required>
+                    </div>
+                    <div class="form-group">
+                        <label>EMAIL</label>
+                        <input type="email" id="form-email" placeholder="guest@email.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>PHONE / WHATSAPP</label>
+                        <input type="text" id="form-phone" placeholder="+62 …">
+                    </div>
+                    <div class="form-group">
+                        <label>NO. OF GUESTS</label>
+                        <input type="number" id="form-guests" value="1" min="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>GUEST ADDRESS</label>
+                    <input type="text" id="form-address" placeholder="Street, City, Country">
+                </div>
+                <div class="form-group">
+                    <label>ROOM</label>
+                    <select id="form-room"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CHECK-IN DATE</label>
+                        <input type="date" id="form-checkin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CHECK-IN TIME</label>
+                        <input type="time" id="form-checkin-time" value="14:00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CHECK-OUT DATE</label>
+                        <input type="date" id="form-checkout" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CHECK-OUT TIME</label>
+                        <input type="time" id="form-checkout-time" value="12:00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>RATE / NIGHT (RP)</label>
+                        <input type="number" id="form-price" value="310000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CLEANING FEE (RP)</label>
+                        <input type="number" id="form-cleaning" value="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>DEPOSIT (RP)</label>
+                        <input type="number" id="form-deposit" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>TAX (%)</label>
+                        <input type="number" id="form-tax" value="0" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>NOTES / SPECIAL REQUESTS</label>
+                    <textarea id="form-notes" rows="2" placeholder="Any special requests…"></textarea>
+                </div>
+
+                <!-- Live Summary -->
+                <div class="form-summary" id="form-summary">
+                    <div class="form-summary-row"><span>Rate per night</span><span id="fs-rate">Rp 310,000</span></div>
+                    <div class="form-summary-row"><span id="fs-nights-label">1 night</span><span id="fs-nights-count">1</span></div>
+                    <div class="form-summary-row"><span>Accommodation</span><span id="fs-accommodation">Rp 310,000</span></div>
+                    <div class="form-summary-row"><span>Cleaning fee</span><span id="fs-cleaning">—</span></div>
+                    <div class="form-summary-row"><span>Deposit</span><span id="fs-deposit">—</span></div>
+                    <div class="form-summary-row"><span>Tax</span><span id="fs-tax">—</span></div>
+                    <div class="form-summary-total"><span>Total</span><span id="fs-total">Rp 310,000</span></div>
+                </div>
+
+                <div class="form-actions form-actions-three">
+                    <button type="button" class="btn btn-outline" id="btn-cancel-form">Cancel</button>
+                    <button type="submit" class="btn btn-secondary" id="btn-create-quotation-form" data-action="quotation">
+                        <i data-lucide="file-plus"></i> Create Quotation
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-create-booking-form" data-action="booking">
+                        <i data-lucide="calendar-plus"></i> Create Booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Room Modal -->
+<div class="modal-overlay" id="room-modal">
+    <div class="modal form-modal">
+        <div class="modal-header">
+            <h3 id="room-modal-title">Add Room</h3>
+            <button class="btn-icon" id="btn-close-room-modal"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="room-form" autocomplete="off">
+                <input type="hidden" id="room-edit-id">
+                <div class="form-group"><label>Room Name</label><input type="text" id="room-name" placeholder="e.g. Terratjo Room" required></div>
+                <div class="form-group"><label>Floor / Location</label><input type="text" id="room-location" placeholder="Taman Melati Apartment, Yogyakarta" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Capacity (Guests)</label><input type="number" id="room-capacity" value="2" min="1" required></div>
+                    <div class="form-group"><label>Default Rate/Night (Rp)</label><input type="number" id="room-rate" value="310000" required></div>
+                </div>
+                <div class="form-group"><label>Description</label><input type="text" id="room-desc" placeholder="e.g. Cozy studio with modern amenities"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="btn-cancel-room">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Preview Modal -->
+<div class="modal-overlay" id="ipm-overlay">
+    <div class="modal ipm-modal">
+        <div class="ipm-header">
+            <h3>Invoice Preview</h3>
+            <button class="btn-icon" id="ipm-btn-x"><i data-lucide="x"></i></button>
+        </div>
+        <div class="ipm-body" id="ipm-printable">
+            <div class="ipm-paper">
+                <!-- Cancelled stamp -->
+                <div class="cancelled-stamp hidden" id="ipm-cancelled-stamp">CANCELLED</div>
+
+                <!-- Paper header -->
+                <div class="ipm-paper-head">
+                    <div class="ipm-logo-block">
+                        <div class="ipm-logo-circle logo-clickable" id="ipm-logo-circle" title="Click to change logo"><i data-lucide="home"></i></div>
+                        <div>
+                            <strong id="ipm-brand">Terratjo Room</strong>
+                            <small id="ipm-brand-addr">at Taman Melati Apartment Yogyakarta</small>
+                        </div>
+                    </div>
+                    <div class="ipm-doc-block">
+                        <span class="ipm-doc-type" id="ipm-doc-type">INVOICE</span>
+                        <small id="ipm-doc-date">Date: —</small>
+                    </div>
+                </div>
+
+                <!-- Guest Information -->
+                <div class="ipm-section">
+                    <h4>Guest Information</h4>
+                    <label class="ipm-field-label">Guest Name</label>
+                    <input class="ipm-field ipm-field-lg" id="ipm-f-name" type="text" value="">
+                    <label class="ipm-field-label">Address</label>
+                    <input class="ipm-field" id="ipm-f-addr" type="text" value="">
+                    <p class="ipm-meta" id="ipm-meta-contact"></p>
+                    <p class="ipm-meta" id="ipm-meta-room"></p>
+                </div>
+
+                <!-- Stay Details -->
+                <div class="ipm-section">
+                    <h4>Stay Details</h4>
+                    <div class="ipm-stay-grid">
+                        <div>
+                            <label class="ipm-field-label">Check-in</label>
+                            <input class="ipm-field" id="ipm-ci-date" type="date">
+                            <input class="ipm-field" id="ipm-ci-time" type="time">
+                        </div>
+                        <div>
+                            <label class="ipm-field-label">Check-out</label>
+                            <input class="ipm-field" id="ipm-co-date" type="date">
+                            <input class="ipm-field" id="ipm-co-time" type="time">
+                        </div>
+                        <div class="ipm-duration">
+                            <label class="ipm-field-label">Duration</label>
+                            <strong id="ipm-duration">1 Night</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Details -->
+                <div class="ipm-section">
+                    <h4>Pricing Details</h4>
+                    <table class="ipm-table">
+                        <thead><tr><th>Description</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>Room Rate</td>
+                                <td id="ipm-t-nights">1 night</td>
+                                <td><input class="ipm-field ipm-rate-field" id="ipm-t-rate" type="number"></td>
+                                <td id="ipm-t-room-amt">Rp 0</td>
+                            </tr>
+                            <tr id="ipm-row-cleaning" class="hidden">
+                                <td>Cleaning Fee</td><td>1</td><td>—</td><td id="ipm-t-cleaning">Rp 0</td>
+                            </tr>
+                            <tr id="ipm-row-deposit" class="hidden">
+                                <td>Deposit</td><td>1</td><td>—</td><td id="ipm-t-deposit">Rp 0</td>
+                            </tr>
+                            <tr id="ipm-row-tax" class="hidden">
+                                <td>Tax</td><td>—</td><td>—</td><td id="ipm-t-tax">Rp 0</td>
+                            </tr>
+                            <tr class="ipm-total-row">
+                                <td colspan="3"><strong>Total Amount</strong></td>
+                                <td><strong class="ipm-grand" id="ipm-t-grand">Rp 0</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Payment + Contact -->
+                <div class="ipm-payment-row">
+                    <div class="ipm-payment-info">
+                        <strong>Payment Info:</strong>
+                        <p id="ipm-bank-name">Bank Central Asia (BCA)</p>
+                        <p id="ipm-acc-name">Account Name: Thomas Vialdo Resky Lamandau</p>
+                        <p id="ipm-acc-no">Account No: 060-132-7499</p>
+                    </div>
+                    <div class="ipm-contact-info">
+                        <strong>Contact us at:</strong>
+                        <p id="ipm-c-phone"></p>
+                        <p id="ipm-c-social"></p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="ipm-footer-msg" id="ipm-footer-msg">Thank you for choosing Terratjo Room at Taman Melati Apartment Yogyakarta</div>
+            </div>
+        </div>
+        <div class="ipm-actions">
+            <button class="btn btn-outline" id="ipm-btn-close">Close</button>
+            <button class="btn btn-danger" id="ipm-btn-cancel"><i data-lucide="x"></i> Cancel Booking</button>
+            <button class="btn btn-secondary" id="ipm-btn-edit"><i data-lucide="pencil"></i> Edit Form</button>
+            <button class="btn btn-secondary" id="ipm-btn-email"><i data-lucide="mail"></i> Send Email</button>
+            <button class="btn btn-primary" id="ipm-btn-print"><i data-lucide="printer"></i> Print / PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden logo file input -->
+<input type="file" id="logo-upload" accept="image/*" style="display:none">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="client.js"></script>
+</body>
+</html>

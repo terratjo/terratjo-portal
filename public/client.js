@@ -1,0 +1,385 @@
+// ── Auth & State ────────────────────────────────────────────────
+const API = '/api';
+const app = { settings: {}, rooms: [], bookings: [] };
+let token = localStorage.getItem('terratjo_token');
+let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', lastAction = 'booking';
+const today = new Date();
+let calYear = today.getFullYear(), calMonth = today.getMonth();
+
+// ── API Client ──────────────────────────────────────────────────
+async function apiFetch(path, options = {}) {
+  if (!token && !path.startsWith('/auth')) { showLogin(); return; }
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API}${path}`, { ...options, headers });
+  if (res.status === 401 || res.status === 403) { logout(); return; }
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+const api = {
+  get: path => apiFetch(path),
+  post: (path, data) => apiFetch(path, { method:'POST', body: JSON.stringify(data) }),
+  put: (path, data) => apiFetch(path, { method:'PUT', body: JSON.stringify(data) }),
+  del: path => apiFetch(path, { method:'DELETE' })
+};
+
+// ── Helpers ─────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt = d => d.toISOString().split('T')[0];
+const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const idr = n => 'Rp ' + Number(n).toLocaleString('id-ID');
+const shortDate = s => s ? new Date(s).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '';
+const nightsCount = (ci, co) => Math.max(1, Math.round((new Date(co) - new Date(ci)) / 86400000));
+const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).name;
+const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
+const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); return acc + b.cleaningFee + b.deposit + tax; };
+
+function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled' }; const l = { confirmed:'Confirmed', awaiting:'Awaiting Payment', quotation:'Quotation', cancelled:'Cancelled' }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
+function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">Quotation</span>` : `<span class="badge badge-invoice">Invoice</span>`; }
+
+// ── Auth UI ─────────────────────────────────────────────────────
+function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('active'); }
+function logout() { token = null; localStorage.removeItem('terratjo_token'); showLogin(); }
+window.logout = logout;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = $('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        const res = await api.post('/auth/login', { username: $('login-user').value, password: $('login-pass').value });
+        token = res.token; localStorage.setItem('terratjo_token', token);
+        $('login-overlay').classList.remove('active');
+        initApp();
+      } catch (e) { showToast('Login failed: ' + e.message); }
+    });
+  }
+  if (token) initApp(); else showLogin();
+});
+
+// ── Real-time Sync (SSE) ─────────────────────────────────────────
+function initSSE() {
+  if (!window.EventSource || !token) return;
+  const evtSource = new EventSource(`${API}/events`);
+  evtSource.onmessage = e => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'sync') { loadData().then(() => { refreshCurrentPage(); showToast('🔄 Real-time sync applied'); }); }
+  };
+  evtSource.onerror = () => { evtSource.close(); setTimeout(initSSE, 5000); };
+}
+
+// ── Navigation ───────────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = $('page-' + page); if (pg) pg.classList.remove('hidden');
+  const nav = document.querySelector(`.nav-item[data-page="${page}"]`); if (nav) nav.classList.add('active');
+  prevPage = page; refreshCurrentPage();
+}
+function refreshCurrentPage() {
+  if (prevPage === 'calendar') renderCalendar();
+  if (prevPage === 'all-bookings') renderBookings('all');
+  if (prevPage === 'invoices') renderInvoices('all');
+  if (prevPage === 'reports') renderReports('all');
+  if (prevPage === 'inventory') renderInventory();
+  if (prevPage === 'settings') renderSettings();
+}
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', e => { e.preventDefault(); navigate(el.dataset.page); }));
+
+// ── Calendar ─────────────────────────────────────────────────────
+function renderCalendar() {
+  $('current-month-display').textContent = ['January','February','March','April','May','June','July','August','September','October','November','December'][calMonth] + ' ' + calYear;
+  const grid = $('days-grid'); if (!grid) return; grid.innerHTML = '';
+  const first = new Date(calYear, calMonth, 1).getDay();
+  const dim = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevDim = new Date(calYear, calMonth, 0).getDate();
+  const todayStr = fmt(today);
+  for (let i = first - 1; i >= 0; i--) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${prevDim - i}</div></div>`;
+  for (let d = 1; d <= dim; d++) {
+    const ds = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = ds === todayStr; const isWE = [0, 6].includes(new Date(calYear, calMonth, d).getDay());
+    let cls = isToday ? 'today' : isWE ? 'weekend' : ''; let blks = '';
+    app.bookings.forEach(b => {
+      if (ds >= b.checkin && ds < b.checkout) {
+        const lbl = ds === b.checkin ? b.guestName : '·';
+        blks += `<div class="booking-block booking-${b.status}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
+      }
+    });
+    grid.innerHTML += `<div class="day-cell" data-date="${ds}"><div class="day-number ${cls}">${d}</div>${blks}</div>`;
+  }
+  const total = first + dim; const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${i}</div></div>`;
+  document.querySelectorAll('.day-cell[data-date]').forEach(cell => cell.addEventListener('click', () => openForm('booking', cell.dataset.date, null)));
+}
+$('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
+$('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+
+// ── Tables ───────────────────────────────────────────────────────
+function renderBookings(filter) {
+  const tb = $('bookings-tbody'); if (!tb) return;
+  const rows = app.bookings.filter(b => filter === 'all' || b.status === filter);
+  tb.innerHTML = '';
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
+  rows.forEach(b => {
+    const n = nightsCount(b.checkin, b.checkout);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(b.status)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
+  });
+}
+$('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
+
+function renderInvoices(filter) {
+  const tb = $('invoices-tbody'); if (!tb) return;
+  const rows = app.bookings.filter(b => b.status !== 'cancelled').filter(b => filter === 'all' || (filter === 'invoice' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
+  tb.innerHTML = '';
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">No documents found.</td></tr>`; return; }
+  rows.forEach(b => {
+    const n = nightsCount(b.checkin, b.checkout);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(b.status)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
+  });
+}
+$('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
+
+function renderReports(filter) {
+  const confirmed = app.bookings.filter(b => b.status === 'confirmed');
+  const awaiting = app.bookings.filter(b => b.status === 'awaiting');
+  const quotations = app.bookings.filter(b => b.type === 'quotation');
+  const cancelled = app.bookings.filter(b => b.status === 'cancelled');
+  const bRev = app.bookings.filter(b => b.type === 'invoice' && b.status !== 'cancelled').reduce((s, b) => s + calcTotal(b), 0);
+  const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
+  $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">Total Revenue</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">from bookings</div></div><div class="stat-card"><div class="stat-card-label">Confirmed</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">bookings</div></div><div class="stat-card"><div class="stat-card-label">Awaiting Payment</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">need follow-up</div></div><div class="stat-card"><div class="stat-card-label">Quotations</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} cancelled/expired</div></div>`;
+  const tb = $('reports-tbody'); if (!tb) return;
+  const rows = app.bookings.filter(b => filter === 'all' || (filter === 'booking' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
+  tb.innerHTML = '';
+  rows.forEach(b => {
+    const n = nightsCount(b.checkin, b.checkout);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td></tr>`;
+  });
+  $('reports-totals').innerHTML = `<span>Quotations value: <strong>${idr(qVal)}</strong></span><span>Bookings revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
+}
+$('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#reports-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderReports(e.target.dataset.filter); });
+
+// ── Inventory ─────────────────────────────────────────────────────
+function renderInventory() {
+  const list = $('rooms-list'); if (!list) return; list.innerHTML = '';
+  app.rooms.forEach(r => {
+    list.innerHTML += `<div class="room-card"><div class="room-card-info"><h3>${r.name}</h3><p>${r.location} · Max ${r.capacity} guests · ${idr(r.rate)}/night</p><p>${r.desc||''}</p></div><div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">Delete</button></div></div>`;
+  });
+}
+window.openEditRoom = id => {
+  const r = app.rooms.find(x => x.id === id); if (!r) return;
+  $('room-modal-title').textContent = 'Edit Room'; $('room-edit-id').value = id;
+  $('room-name').value = r.name; $('room-location').value = r.location; $('room-capacity').value = r.capacity; $('room-rate').value = r.rate; $('room-desc').value = r.desc||'';
+  $('room-modal').classList.add('active');
+};
+window.deleteRoom = async id => {
+  if (!confirm('Delete this room?')) return;
+  try { await api.del(`/rooms/${id}`); showToast('Room deleted.'); await loadData(); renderInventory(); }
+  catch (e) { showToast('Delete failed: ' + e.message); }
+};
+$('btn-add-room')?.addEventListener('click', () => { $('room-modal-title').textContent = 'Add Room'; $('room-form').reset(); $('room-edit-id').value = ''; $('room-modal').classList.add('active'); });
+$('room-form')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = { name:$('room-name').value, location:$('room-location').value, capacity:+$('room-capacity').value, rate:+$('room-rate').value, desc:$('room-desc').value };
+  const eid = $('room-edit-id').value;
+  try {
+    if (eid) { await api.put(`/rooms/${eid}`, data); showToast('Room updated.'); }
+    else { await api.post('/rooms', data); showToast('Room added.'); }
+    $('room-modal').classList.remove('active'); await loadData(); renderInventory(); populateRoomSelect();
+  } catch (e) { showToast('Save failed: ' + e.message); }
+});
+['btn-close-room-modal','btn-cancel-room'].forEach(id => $(id)?.addEventListener('click', () => $('room-modal').classList.remove('active')));
+
+// ── Settings ──────────────────────────────────────────────────────
+function renderSettings() {
+  Object.entries(app.settings).forEach(([k, v]) => {
+    const el = $('setting-' + k.replace(/([A-Z])/g, c => '-' + c.toLowerCase()));
+    if (el) el.value = v;
+  });
+  updateSIP();
+}
+function updateSIP() {
+  $('sip-brand').textContent = $('setting-brand')?.value || '';
+  $('sip-address').textContent = $('setting-inv-address')?.value || '';
+  $('sip-email').textContent = $('setting-email')?.value || '';
+  $('sip-phone').textContent = $('setting-phone')?.value || '';
+}
+['setting-brand','setting-inv-address','setting-email','setting-phone'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', updateSIP); });
+$('btn-save-settings')?.addEventListener('click', async () => {
+  const payload = { brand:$('setting-brand').value, tagline:$('setting-tagline').value, location:$('setting-location').value, invAddress:$('setting-inv-address').value, email:$('setting-email').value, phone:$('setting-phone').value, bankName:$('setting-bank-name').value, accName:$('setting-acc-name').value, accNo:$('setting-acc-no').value, social:$('setting-social').value, notes:$('setting-notes').value };
+  try { await api.put('/settings', payload); Object.assign(app.settings, payload); showToast('Settings saved!'); updateTopBar(); }
+  catch (e) { showToast('Save failed: ' + e.message); }
+});
+
+// ── Form Modal ────────────────────────────────────────────────────
+function populateRoomSelect() { const sel = $('form-room'); if (!sel) return; sel.innerHTML = ''; app.rooms.forEach(r => { sel.innerHTML += `<option value="${r.id}">${r.name}</option>`; }); }
+function calcFormSummary() {
+  const ci = $('form-checkin').value, co = $('form-checkout').value;
+  const rate = +$('form-price').value||0, cleaning = +$('form-cleaning').value||0, deposit = +$('form-deposit').value||0, taxPct = +$('form-tax').value||0;
+  const n = (ci && co) ? nightsCount(ci, co) : 1; const acc = n * rate, taxAmt = Math.round((acc + cleaning) * taxPct / 100), total = acc + cleaning + deposit + taxAmt;
+  $('fs-rate').textContent = idr(rate); $('fs-nights-label').textContent = n + ' night' + (n>1?'s':''); $('fs-nights-count').textContent = n;
+  $('fs-accommodation').textContent = idr(acc); $('fs-cleaning').textContent = cleaning>0?idr(cleaning):'—';
+  $('fs-deposit').textContent = deposit>0?idr(deposit):'—'; $('fs-tax').textContent = taxPct>0?idr(taxAmt):'—'; $('fs-total').textContent = idr(total);
+}
+function openForm(type, dateStr, prefillId) {
+  populateRoomSelect();
+  if (prefillId) {
+    const b = app.bookings.find(x => x.id === prefillId); if (!b) return;
+    $('form-modal-title').textContent = 'Edit ' + b.id;
+    $('form-name').value = b.guestName||''; $('form-email').value = b.guestEmail||''; $('form-phone').value = b.phone||''; $('form-guests').value = b.numGuests||1; $('form-address').value = b.address||'';
+    $('form-room').value = b.room; $('form-checkin').value = b.checkin; $('form-checkout').value = b.checkout; $('form-checkin-time').value = b.checkinTime||'14:00'; $('form-checkout-time').value = b.checkoutTime||'12:00';
+    $('form-price').value = b.rate; $('form-cleaning').value = b.cleaningFee||0; $('form-deposit').value = b.deposit||0; $('form-tax').value = b.tax||0; $('form-notes').value = b.notes||''; $('booking-form').dataset.editId = prefillId;
+  } else {
+    $('form-modal-title').textContent = type==='booking'?'New Booking':'New Quotation';
+    $('booking-form').reset(); $('booking-form').dataset.editId = '';
+    $('form-checkin').value = dateStr||fmt(today); $('form-checkout').value = fmt(addD(new Date($('form-checkin').value), 1));
+    $('form-price').value = getRoomRate($('form-room').value||app.rooms[0]?.id||'r1'); $('form-guests').value=1; $('form-cleaning').value=0; $('form-deposit').value=0; $('form-tax').value=0; $('form-checkin-time').value='14:00'; $('form-checkout-time').value='12:00';
+  }
+  currentFormAction = type; calcFormSummary(); $('form-modal').classList.add('active');
+}
+['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
+$('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value); calcFormSummary(); });
+$('btn-create-booking-form')?.addEventListener('click', () => { lastAction = 'booking'; });
+$('btn-create-quotation-form')?.addEventListener('click', () => { lastAction = 'quotation'; });
+$('booking-form')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const ci = $('form-checkin').value, co = $('form-checkout').value;
+  if (new Date(co) <= new Date(ci)) { showToast('Check-out must be after check-in.'); return; }
+  const editId = $('booking-form').dataset.editId; const isBooking = lastAction === 'booking';
+  const data = { type:isBooking?'invoice':'quotation', guestName:$('form-name').value, guestEmail:$('form-email').value, phone:$('form-phone').value, address:$('form-address').value, numGuests:+$('form-guests').value||1, room:$('form-room').value, checkin:ci, checkout:co, checkinTime:$('form-checkin-time').value||'14:00', checkoutTime:$('form-checkout-time').value||'12:00', rate:+$('form-price').value||310000, cleaningFee:+$('form-cleaning').value||0, deposit:+$('form-deposit').value||0, tax:+$('form-tax').value||0, notes:$('form-notes').value, status:isBooking?'awaiting':'quotation' };
+  try {
+    let res;
+    if (editId) { await api.put(`/bookings/${editId}`, data); showToast('Booking updated!'); res = { id: editId }; }
+    else { res = await api.post('/bookings', data); showToast((isBooking?'Booking':'Quotation')+' created!'); }
+    $('form-modal').classList.remove('active'); await loadData(); openIPM(res.id || editId);
+  } catch (e) { showToast('Save failed: ' + e.message); }
+});
+$('btn-new-booking')?.addEventListener('click', () => openForm('booking', null, null));
+$('btn-new-quotation')?.addEventListener('click', () => openForm('quotation', null, null));
+['btn-close-form','btn-cancel-form'].forEach(id => $(id)?.addEventListener('click', () => $('form-modal').classList.remove('active')));
+
+// ── Invoice Preview Modal (IPM) ───────────────────────────────────
+window.openIPM = function(id) {
+  const b = app.bookings.find(x => x.id === id); if (!b) return; currentIPMId = id;
+  const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate, taxAmt = Math.round((acc + b.cleaningFee) * (b.tax/100)), grandTotal = acc + b.cleaningFee + b.deposit + taxAmt;
+  $('ipm-brand').textContent = app.settings.brand||'Terratjo Room'; $('ipm-brand-addr').textContent = app.settings.invAddress||'';
+  const docLabel = b.status==='cancelled'?'CANCELLED':(b.type==='quotation'?'QUOTATION':'INVOICE');
+  const docEl = $('ipm-doc-type'); docEl.textContent = docLabel; docEl.style.color = b.status==='cancelled'?'#b91c1c':'var(--primary)';
+  $('ipm-doc-date').textContent = 'Date: ' + shortDate(fmt(today));
+  const stamp = $('ipm-cancelled-stamp'); b.status==='cancelled'?stamp.classList.remove('hidden'):stamp.classList.add('hidden');
+  $('ipm-f-name').value = b.guestName||''; $('ipm-f-addr').value = b.address||''; $('ipm-meta-contact').textContent = (b.guestEmail||'') + (b.phone?' · '+b.phone:'');
+  $('ipm-meta-room').textContent = (b.numGuests||1)+' guest'+(b.numGuests>1?'s':'')+' · Room: '+getRoomName(b.room);
+  $('ipm-ci-date').value = b.checkin; $('ipm-ci-time').value = b.checkinTime||'14:00'; $('ipm-co-date').value = b.checkout; $('ipm-co-time').value = b.checkoutTime||'12:00'; $('ipm-duration').textContent = n+' Night'+(n>1?'s':'');
+  $('ipm-t-nights').textContent = n+' night'+(n>1?'s':''); $('ipm-t-rate').value = b.rate; $('ipm-t-room-amt').textContent = idr(acc);
+  $('ipm-t-cleaning').textContent = idr(b.cleaningFee); $('ipm-row-cleaning').classList.toggle('hidden', b.cleaningFee<=0);
+  $('ipm-t-deposit').textContent = idr(b.deposit); $('ipm-row-deposit').classList.toggle('hidden', b.deposit<=0);
+  $('ipm-t-tax').textContent = idr(taxAmt); $('ipm-row-tax').classList.toggle('hidden', b.tax<=0); $('ipm-t-grand').textContent = idr(grandTotal);
+  $('ipm-bank-name').textContent = app.settings.bankName||''; $('ipm-acc-name').textContent = 'Account Name: '+(app.settings.accName||''); $('ipm-acc-no').textContent = 'Account No: '+(app.settings.accNo||'');
+  const waIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#000" style="vertical-align:middle;margin-right:5px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+  const igIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`;
+  $('ipm-c-phone').innerHTML = waIcon + (app.settings.phone||''); $('ipm-c-social').innerHTML = igIcon + (app.settings.social||'').replace(/^@/,''); $('ipm-footer-msg').textContent = app.settings.notes||'';
+  const isCancelled = b.status==='cancelled'; $('ipm-btn-cancel').style.display = isCancelled?'none':''; $('ipm-btn-edit').style.display = isCancelled?'none':''; $('ipm-overlay').classList.add('active');
+};
+$('ipm-t-rate')?.addEventListener('input', () => {
+  const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
+  const n = nightsCount($('ipm-ci-date').value||b.checkin, $('ipm-co-date').value||b.checkout);
+  const rate = +$('ipm-t-rate').value||0; const acc = n*rate; const taxAmt = Math.round((acc+b.cleaningFee)*(b.tax/100));
+  $('ipm-t-room-amt').textContent = idr(acc); $('ipm-t-grand').textContent = idr(acc+b.cleaningFee+b.deposit+taxAmt);
+});
+function closeIPM() { $('ipm-overlay').classList.remove('active'); }
+$('ipm-btn-x')?.addEventListener('click', closeIPM); $('ipm-btn-close')?.addEventListener('click', closeIPM);
+$('ipm-overlay')?.addEventListener('click', e => { if (e.target.id==='ipm-overlay') closeIPM(); });
+$('ipm-btn-cancel')?.addEventListener('click', async () => {
+  const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
+  if (!confirm('Mark this booking as cancelled?')) return;
+  try { await api.del(`/bookings/${b.id}`); showToast('Booking marked as cancelled.'); await loadData(); closeIPM(); refreshCurrentPage(); }
+  catch (e) { showToast('Cancel failed: ' + e.message); }
+});
+$('ipm-btn-edit')?.addEventListener('click', () => { const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return; closeIPM(); openForm(b.type==='quotation'?'quotation':'booking', null, currentIPMId); });
+$('ipm-btn-email')?.addEventListener('click', () => {
+  const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
+  const sub = encodeURIComponent((b.type==='quotation'?'Quotation':'Booking')+' '+b.id+' – Terratjo Room');
+  const body = encodeURIComponent('Dear '+b.guestName+',\n\nThank you for choosing Terratjo Room.\n\nBest regards,\nTerratjo Room Team');
+  window.open('mailto:'+(b.guestEmail||'')+'?subject='+sub+'&body='+body); showToast('Email client opened!');
+});
+$('ipm-btn-print')?.addEventListener('click', () => window.print());
+
+// ── Data Load & Init ──────────────────────────────────────────────
+async function loadData() {
+  const [s, r, b] = await Promise.all([api.get('/settings'), api.get('/rooms'), api.get('/bookings')]);
+  Object.assign(app.settings, s); app.rooms = r; app.bookings = b;
+}
+async function initApp() {
+  if (!token) { showLogin(); return; }
+  try {
+    await loadData();
+    lucide.createIcons(); populateRoomSelect(); updateTopBar(); navigate(prevPage);
+    applyLogo(app.settings.logo || '');
+    initSSE();
+  } catch (e) { console.error('Init failed:', e); showToast('Failed to load data. Check backend.'); logout(); }
+}
+function updateTopBar() {
+  if ($('topbar-brand')) $('topbar-brand').textContent = (app.settings.brand||'Terratjo') + ' Booking Portal';
+  if ($('topbar-location')) $('topbar-location').textContent = app.settings.location||'';
+  if ($('sidebar-brand-name')) $('sidebar-brand-name').textContent = app.settings.brand||'Terratjo Room';
+}
+
+// ── Logo Upload ───────────────────────────────────────────────────
+function applyLogo(dataUrl) {
+  const imgTag = dataUrl
+    ? `<img src="${dataUrl}" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">`
+    : `<i data-lucide="home"></i>`;
+
+  ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle'].forEach(id => {
+    const el = $(id); if (el) el.innerHTML = imgTag;
+  });
+
+  const removeBtn = $('btn-remove-logo');
+  if (removeBtn) removeBtn.style.display = dataUrl ? 'inline-flex' : 'none';
+
+  const hintTitle = document.querySelector('.logo-upload-hint-title');
+  if (hintTitle) hintTitle.textContent = dataUrl ? 'Click to change logo' : 'Click to upload logo';
+
+  if (!dataUrl) lucide.createIcons();
+}
+
+function triggerLogoUpload() { $('logo-upload')?.click(); }
+
+// Attach click listeners to all logo spots
+['sidebar-logo-box','sip-logo-box','ipm-logo-circle'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('click', triggerLogoUpload);
+});
+// Settings area uses its own onclick in HTML (kept for that area only)
+$('settings-logo-box')?.addEventListener('click', triggerLogoUpload);
+
+async function removeLogo() {
+  if (!confirm('Remove the custom logo and restore the default?')) return;
+  try {
+    await api.put('/settings', { ...app.settings, logo: '' });
+    app.settings.logo = '';
+    applyLogo('');
+    showToast('Logo removed.');
+  } catch (e) { showToast('Failed to remove logo: ' + e.message); }
+}
+window.removeLogo = removeLogo;
+
+$('logo-upload')?.addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { showToast('Image too large — please use a file under 3MB.'); this.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const dataUrl = e.target.result;
+    try {
+      await api.put('/settings', { ...app.settings, logo: dataUrl });
+      app.settings.logo = dataUrl;
+      applyLogo(dataUrl);
+      showToast('✅ Logo updated successfully!');
+    } catch (err) { showToast('Failed to save logo: ' + err.message); }
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
