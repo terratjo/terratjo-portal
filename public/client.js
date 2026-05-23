@@ -6,6 +6,21 @@ let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', l
 const today = new Date();
 let calYear = today.getFullYear(), calMonth = today.getMonth();
 
+// ── Mobile Sidebar ───────────────────────────────────────────────
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('mobile-open');
+  document.getElementById('sidebar-overlay').classList.add('active');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+}
+// Close sidebar when a nav item is tapped on mobile
+document.addEventListener('click', e => {
+  if (e.target.closest('.nav-item')) closeSidebar();
+});
+
+
 // ── API Client ──────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
   if (!token && !path.startsWith('/auth')) { showLogin(); return; }

@@ -13,6 +13,9 @@
 <body>
 <div id="app" class="app-container">
 
+    <!-- MOBILE SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -52,8 +55,11 @@
         <!-- TOP BAR -->
         <header class="top-bar">
             <div class="top-bar-left">
+                <button class="btn-hamburger" id="btn-hamburger" onclick="openSidebar()" title="Menu">
+                    <i data-lucide="menu"></i>
+                </button>
                 <h1 class="page-title" id="topbar-brand">Terratjo Booking Portal</h1>
-                <span class="location-badge" id="topbar-location">Taman Melati Apt - Yogyakarta</span>
+                <span class="location-badge mobile-hide" id="topbar-location">Taman Melati Apt - Yogyakarta</span>
             </div>
             <div class="top-bar-right">
                 <button class="btn btn-primary" id="btn-new-booking"><i data-lucide="calendar-plus"></i> New Booking</button>
