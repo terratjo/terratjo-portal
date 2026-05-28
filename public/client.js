@@ -398,3 +398,27 @@ $('logo-upload')?.addEventListener('change', async function () {
   this.value = '';
 });
 
+// ── Change Password ───────────────────────────────────────────────
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#btn-change-password')) return;
+  const current = $('pw-current')?.value?.trim();
+  const nw      = $('pw-new')?.value?.trim();
+  const confirm = $('pw-confirm')?.value?.trim();
+  if (!current || !nw || !confirm) { showToast('Please fill in all password fields.'); return; }
+  if (nw.length < 6) { showToast('New password must be at least 6 characters.'); return; }
+  if (nw !== confirm) { showToast('New passwords do not match.'); return; }
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword: current, newPassword: nw })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || 'Failed to change password')); return; }
+    showToast('✅ Password changed! Please log in again.');
+    $('pw-current').value = ''; $('pw-new').value = ''; $('pw-confirm').value = '';
+    setTimeout(() => logout(), 2000);
+  } catch (err) { showToast('Error: ' + err.message); }
+});
+
+

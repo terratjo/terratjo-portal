@@ -44,11 +44,18 @@ async function initDB() {
 }
 
 async function seedData() {
+  // Migration: rename 'admin' to 'terratjo' if it exists
+  const { rows: adminRows } = await db.execute({ sql:'SELECT id FROM users WHERE username = ?', args:['admin'] });
+  if (adminRows.length > 0) {
+    await db.execute({ sql:'UPDATE users SET username = ? WHERE username = ?', args:['terratjo','admin'] });
+  }
+
   const { rows: [uc] } = await db.execute('SELECT COUNT(*) as c FROM users');
   if (Number(uc.c) === 0) {
     await db.execute({ sql: 'INSERT INTO users (username, password_hash, role) VALUES (?,?,?)',
-      args: ['admin', bcrypt.hashSync('admin123', 10), 'admin'] });
+      args: ['terratjo', bcrypt.hashSync('admin123', 10), 'admin'] });
   }
+
   const { rows: [rc] } = await db.execute('SELECT COUNT(*) as c FROM rooms');
   if (Number(rc.c) === 0) {
     await db.batch([
@@ -112,12 +119,30 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({ token, username: user.username, role: user.role });
 });
 
+app.post('/api/auth/change-password', async (req, res) => {
+  const t = req.headers.authorization?.split(' ')[1];
+  if (!t) return res.status(401).json({ error: 'Token required' });
+  let userId;
+  try { userId = jwt.verify(t, JWT_SECRET).id; }
+  catch { return res.status(403).json({ error: 'Invalid token' }); }
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both fields required' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  const { rows } = await db.execute({ sql:'SELECT * FROM users WHERE id = ?', args:[userId] });
+  const user = rows[0];
+  if (!user || !bcrypt.compareSync(currentPassword, user.password_hash))
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  await db.execute({ sql:'UPDATE users SET password_hash = ? WHERE id = ?', args:[bcrypt.hashSync(newPassword, 10), userId] });
+  res.json({ success: true });
+});
+
 const auth = (req, res, next) => {
   const t = req.headers.authorization?.split(' ')[1];
   if (!t) return res.status(401).json({ error: 'Token required' });
   try { req.user = jwt.verify(t, JWT_SECRET); next(); }
   catch { res.status(403).json({ error: 'Invalid/expired token' }); }
 };
+
 
 // ── Settings ──────────────────────────────────────────────────────
 app.get('/api/settings', auth, async (req, res) => {
