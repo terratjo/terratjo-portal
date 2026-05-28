@@ -143,6 +143,23 @@ const auth = (req, res, next) => {
   catch { res.status(403).json({ error: 'Invalid/expired token' }); }
 };
 
+// ── Google Sheets Sync ────────────────────────────────────────────
+const SHEETS_WEBHOOK = process.env.SHEETS_WEBHOOK_URL || '';
+async function syncToSheets(action, booking) {
+  if (!SHEETS_WEBHOOK) return; // Skip if not configured
+  try {
+    await fetch(SHEETS_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...booking })
+    });
+  } catch (e) {
+    console.warn('Google Sheets sync failed (non-critical):', e.message);
+  }
+}
+
+
+
 
 // ── Settings ──────────────────────────────────────────────────────
 app.get('/api/settings', auth, async (req, res) => {
@@ -200,18 +217,24 @@ app.post('/api/bookings', auth, async (req, res) => {
   const { id,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
           checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes } = req.body;
   const idGen = id || `BK-${String(Date.now()).slice(-6)}`;
+  const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
+  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
   try {
     await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,deposit,tax,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes] });
+    syncToSheets('create', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/bookings/:id', auth, async (req, res) => {
   const { type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
           checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes } = req.body;
+  const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
+  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
   const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,deposit=?,tax=?,status=?,notes=? WHERE id=?`,
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  syncToSheets('update', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 app.delete('/api/bookings/:id', auth, async (req, res) => {
