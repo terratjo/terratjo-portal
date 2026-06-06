@@ -3,7 +3,7 @@ const API = '/api';
 const app = { settings: {}, rooms: [], bookings: [] };
 let token = localStorage.getItem('terratjo_token');
 let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', lastAction = 'booking';
-const today = new Date();
+const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
 let calYear = today.getFullYear(), calMonth = today.getMonth();
 
 // ── Mobile Sidebar ───────────────────────────────────────────────
@@ -92,6 +92,10 @@ function navigate(page) {
   const pg = $('page-' + page); if (pg) pg.classList.remove('hidden');
   const nav = document.querySelector(`.nav-item[data-page="${page}"]`); if (nav) nav.classList.add('active');
   prevPage = page; refreshCurrentPage();
+}
+function setMbnActive(id) {
+  document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
+  const el = $(id); if (el) el.classList.add('active');
 }
 function refreshCurrentPage() {
   if (prevPage === 'calendar') renderCalendar();
@@ -318,7 +322,7 @@ $('ipm-btn-email')?.addEventListener('click', () => {
   const body = encodeURIComponent('Dear '+b.guestName+',\n\nThank you for choosing Terratjo Room.\n\nBest regards,\nTerratjo Room Team');
   window.open('mailto:'+(b.guestEmail||'')+'?subject='+sub+'&body='+body); showToast('Email client opened!');
 });
-$('ipm-btn-print')?.addEventListener('click', () => window.print());
+$('ipm-btn-print')?.addEventListener('click', () => printInvoice());
 
 // ── Data Load & Init ──────────────────────────────────────────────
 async function loadData() {
@@ -421,4 +425,57 @@ document.addEventListener('click', async e => {
   } catch (err) { showToast('Error: ' + err.message); }
 });
 
-
+// ── Print / PDF Invoice ──────────────────────────────────────────
+function printInvoice() {
+  const b = app.bookings.find(x => x.id === currentIPMId);
+  const s = app.settings || {};
+  if (!b) return;
+  const roomObj = app.rooms.find(r => r.id === b.room);
+  const roomName = roomObj ? roomObj.name : b.room;
+  const nights = Math.max(1, Math.round((new Date(b.checkout) - new Date(b.checkin)) / 86400000));
+  const roomAmt = nights * (b.rate || 0);
+  const taxAmt = Math.round((roomAmt + (b.cleaningFee || 0)) * ((b.tax || 0) / 100));
+  const grand = roomAmt + (b.cleaningFee || 0) + (b.deposit || 0) + taxAmt;
+  const fmtMoney = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
+  const todayStr = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'})).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const type = (b.type || 'booking').toUpperCase();
+  const logoHtml = s.logo
+    ? '<img src="'+s.logo+'" style="width:56px;height:56px;border-radius:12px;object-fit:cover">'
+    : '<div style="width:56px;height:56px;border-radius:12px;background:#ffc823;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a1a2e" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>';
+  const win = window.open('', '_blank', 'width=860,height=1050');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Terratjo '+type+'</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">'
+    + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:36px 44px}.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid #f0f0f0}.brand{display:flex;align-items:center;gap:14px}.bn{font-family:"Playfair Display",serif;font-size:22px;font-weight:700}.bs{font-size:12px;color:#888;margin-top:2px}.dt{font-family:"Playfair Display",serif;font-size:30px;font-weight:700;color:#ffc823;text-align:right}.dm{font-size:11px;color:#666;margin-top:4px;text-align:right}h3{font-size:13px;font-weight:700;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid #f0f0f0}.lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#888;margin-bottom:2px}.val{font-size:15px;font-weight:700;padding-bottom:6px;border-bottom:1.5px solid #ffc823;margin-bottom:10px}.vsm{font-size:13px;padding-bottom:5px;border-bottom:1px solid #eee;margin-bottom:10px}.meta{font-size:12px;color:#555;margin-bottom:3px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}hr{border:none;border-top:1px solid #f0f0f0;margin:16px 0}table{width:100%;border-collapse:collapse;margin:8px 0}thead tr{background:#1a1a2e}thead th{padding:8px 12px;font-size:11px;font-weight:600;color:#fff;text-align:left;text-transform:uppercase}tbody td{padding:7px 12px;font-size:12px;border-bottom:1px solid #f0f0f0}tbody tr:nth-child(even){background:#fafafa}.tt{background:#1a1a2e!important}.tt td{color:#ffc823;font-weight:700;font-size:13px;border:none}.pay{display:flex;justify-content:space-between;align-items:flex-start;border-top:1px solid #eee;padding-top:14px;margin-top:14px}.pl{font-weight:700;font-size:12px;margin-bottom:6px}.pm{font-size:11px;color:#444;margin-bottom:3px}.nb{background:#fffbeb;border-left:3px solid #ffc823;border-radius:4px;padding:10px 14px;font-size:12px;margin:12px 0}footer{text-align:center;padding-top:12px;border-top:1px solid #eee;margin-top:12px;font-size:11px;color:#999}@media print{body{padding:10mm 12mm}@page{size:A4 portrait;margin:0}}</style></head><body>'
+    + '<div class="hdr"><div class="brand">'+logoHtml+'<div><div class="bn">'+(s.brand||'Terratjo Room')+'</div><div class="bs">'+(s.invAddress||'')+'</div></div></div>'
+    + '<div><div class="dt">'+type+'</div><div class="dm">Date: '+todayStr+'</div></div></div>'
+    + '<h3>Guest Information</h3>'
+    + '<div class="lbl">Guest Name</div><div class="val">'+(b.guestName||'-')+'</div>'
+    + '<div class="lbl">Address</div><div class="vsm">'+(b.address||'-')+'</div>'
+    + '<div class="meta">'+(b.guestEmail||'')+' · '+(b.phone||'')+'</div>'
+    + '<div class="meta">'+(b.numGuests||1)+' guest(s) · Room: '+roomName+'</div>'
+    + '<hr><h3>Stay Details</h3>'
+    + '<div class="g2"><div><div class="lbl">Check-In</div><div class="vsm">'+fmtDate(b.checkin)+' at '+(b.checkinTime||'14:00')+'</div></div>'
+    + '<div><div class="lbl">Check-Out</div><div class="vsm">'+fmtDate(b.checkout)+' at '+(b.checkoutTime||'12:00')+'</div></div></div>'
+    + '<div class="meta" style="font-weight:600;margin-top:4px">Duration: '+nights+' night(s)</div>'
+    + '<hr><h3>Pricing Details</h3>'
+    + '<table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>'
+    + '<tr><td>Room Rate</td><td>'+nights+' night(s)</td><td>'+fmtMoney(b.rate)+'</td><td>'+fmtMoney(roomAmt)+'</td></tr>'
+    + ((b.cleaningFee||0)>0 ? '<tr><td>Cleaning Fee</td><td>1</td><td>-</td><td>'+fmtMoney(b.cleaningFee)+'</td></tr>' : '')
+    + ((b.deposit||0)>0 ? '<tr><td>Deposit</td><td>1</td><td>-</td><td>'+fmtMoney(b.deposit)+'</td></tr>' : '')
+    + ((b.tax||0)>0 ? '<tr><td>Tax ('+b.tax+'%)</td><td>-</td><td>-</td><td>'+fmtMoney(taxAmt)+'</td></tr>' : '')
+    + '<tr class="tt"><td colspan="3"><b>Total Amount</b></td><td><b>'+fmtMoney(grand)+'</b></td></tr>'
+    + '</tbody></table>'
+    + (b.notes ? '<div class="nb"><b>Notes / Special Requests:</b> '+b.notes+'</div>' : '')
+    + '<div class="pay"><div><div class="pl">Payment Info:</div><div class="pm">'+(s.bankName||'')+'</div>'
+    + '<div class="pm">Account Name: '+(s.accName||'')+'</div><div class="pm">Account No: '+(s.accNo||'')+'</div></div>'
+    + '<div style="text-align:right"><div class="pl">Contact us at:</div>'
+    + '<div class="pm">📱 '+(s.phone||'')+'</div>'
+    + '<div class="pm">📸 '+(s.social||'')+'</div></div></div>'
+    + '<footer>'+(s.notes||'Thank you for your booking.')+'</footer>'
+    + '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);};<'+'/scr'+'ipt>'
+    + '</body></html>';
+  win.document.write(html);
+  win.document.close();
+}
+window.printInvoice = printInvoice;

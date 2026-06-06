@@ -576,5 +576,21 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="client.js"></script>
+<!-- Mobile Bottom Nav Bar -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button class="mbn-item active" id="mbn-calendar" onclick="navigate('calendar');setMbnActive('mbn-calendar')">
+        <span class="mbn-icon">📅</span><span class="mbn-label">Calendar</span>
+    </button>
+    <button class="mbn-item" id="mbn-bookings" onclick="navigate('all-bookings');setMbnActive('mbn-bookings')">
+        <span class="mbn-icon">☰</span><span class="mbn-label">Bookings</span>
+    </button>
+    <button class="mbn-item" id="mbn-invoices" onclick="navigate('invoices');setMbnActive('mbn-invoices')">
+        <span class="mbn-icon">🧾</span><span class="mbn-label">Invoices</span>
+    </button>
+    <button class="mbn-item" id="mbn-settings" onclick="navigate('settings');setMbnActive('mbn-settings')">
+        <span class="mbn-icon">⚙️</span><span class="mbn-label">Settings</span>
+    </button>
+</nav>
+
 </body>
 </html>
