@@ -308,7 +308,7 @@
             <h2>Terratjo Room</h2>
             <p>Booking Portal — Staff Access</p>
         </div>
-        <form id="login-form" class="modal-body">
+        <form id="login-form" class="modal-body" onsubmit="return false;">
             <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="Enter username" required autocomplete="username"></div>
             <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="Enter password" required autocomplete="current-password"></div>
             <div class="form-actions" style="margin-top:8px;">
@@ -564,7 +564,7 @@
             <button class="btn btn-secondary" id="ipm-btn-edit"><i data-lucide="pencil"></i> Edit Form</button>
             <button class="btn btn-secondary" id="ipm-btn-email"><i data-lucide="mail"></i> Send Email</button>
             <button class="btn btn-primary" id="ipm-btn-print"><i data-lucide="printer"></i> Print / PDF</button>
-            <button class="btn btn-danger" id="ipm-btn-delete" style="background:#7f1d1d;border-color:#7f1d1d;"><i data-lucide="trash-2"></i> Delete</button>
+            <button class="btn btn-danger" id="ipm-btn-delete" title="Delete Booking" style="background:#7f1d1d;border-color:#7f1d1d;padding:9px 12px;"><i data-lucide="trash-2"></i></button>
         </div>
     </div>
 </div>
