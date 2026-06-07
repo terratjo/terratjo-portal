@@ -242,6 +242,11 @@ app.delete('/api/bookings/:id', auth, async (req, res) => {
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
+app.delete('/api/bookings/:id/permanent', auth, async (req, res) => {
+  const r = await db.execute({ sql:'DELETE FROM bookings WHERE id=?', args:[req.params.id] });
+  if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  broadcast({ type:'sync', target:'all' }); res.json({ success: true });
+});
 
 // ── Serve Frontend ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
