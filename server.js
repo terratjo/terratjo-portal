@@ -248,6 +248,20 @@ app.delete('/api/bookings/:id/permanent', auth, async (req, res) => {
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 
+// ── TEMPORARY: Emergency Reset (remove after use) ────────────────
+app.post('/api/emergency-reset', async (req, res) => {
+  const { secret, newUsername, newPassword } = req.body;
+  if (secret !== 'terratjo-reset-2026') return res.status(403).json({ error: 'Invalid secret' });
+  if (!newUsername || !newPassword) return res.status(400).json({ error: 'Username and password required' });
+  try {
+    const hash = bcrypt.hashSync(newPassword, 10);
+    // Delete all users and recreate
+    await db.execute('DELETE FROM users');
+    await db.execute({ sql: 'INSERT INTO users (username, password_hash, role) VALUES (?,?,?)', args: [newUsername, hash, 'admin'] });
+    res.json({ success: true, message: `User "${newUsername}" reset successfully. Remove this endpoint after use.` });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Serve Frontend ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
