@@ -59,18 +59,30 @@ function logout() { token = null; localStorage.removeItem('terratjo_token'); sho
 window.logout = logout;
 
 document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = $('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      try {
-        const res = await api.post('/auth/login', { username: $('login-user').value, password: $('login-pass').value });
-        token = res.token; localStorage.setItem('terratjo_token', token);
-        $('login-overlay').classList.remove('active');
-        initApp();
-      } catch (e) { showToast('Login failed: ' + e.message); }
-    });
+
+  // ── Login handler ──────────────────────────────────────────────
+  async function doLogin() {
+    const username = ($('login-user')?.value || '').trim();
+    const password = ($('login-pass')?.value || '').trim();
+    if (!username || !password) { showToast('Please enter username and password.'); return; }
+    try {
+      const res = await api.post('/auth/login', { username, password });
+      token = res.token;
+      localStorage.setItem('terratjo_token', token);
+      $('login-overlay').classList.remove('active');
+      initApp();
+    } catch (e) { showToast('Login failed: ' + e.message); }
   }
+
+  // Click the Sign In button
+  const loginBtn = $('btn-login-submit');
+  if (loginBtn) loginBtn.addEventListener('click', doLogin);
+
+  // Also support pressing Enter inside the form fields
+  ['login-user', 'login-pass'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doLogin(); } });
+  });
 
   // Password visibility toggle
   const toggleBtn = $('password-toggle');
