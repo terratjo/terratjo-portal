@@ -574,8 +574,8 @@
         </div>
         <div class="ipm-actions ipm-footer">
             <button class="btn btn-outline" id="ipm-btn-close">Close</button>
-            <button class="btn btn-secondary" id="ipm-btn-edit"><i data-lucide="pencil"></i> Edit Form</button>
-            <button class="btn btn-secondary" id="ipm-btn-email"><i data-lucide="mail"></i> Send Email</button>
+            <button class="btn btn-secondary" id="ipm-btn-edit" title="Edit Form"><i data-lucide="pencil"></i></button>
+            <button class="btn btn-secondary" id="ipm-btn-email" title="Send Email"><i data-lucide="mail"></i></button>
             <button class="btn btn-primary" id="ipm-btn-print"><i data-lucide="printer"></i> Print / PDF</button>
             <button class="btn btn-danger" id="ipm-btn-cancel"><i data-lucide="x"></i> Cancel Booking</button>
             <button class="btn btn-danger" id="ipm-btn-delete" title="Delete Booking" style="background:#7f1d1d;border-color:#7f1d1d;padding:9px 12px;"><i data-lucide="trash-2"></i></button>
@@ -591,6 +591,17 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="client.js"></script>
+<!-- Day Detail Sheet (mobile) -->
+<div id="day-detail-sheet" class="day-detail-sheet">
+    <div class="dds-bar"></div>
+    <div class="dds-header">
+        <span id="day-detail-date" class="dds-date"></span>
+        <button class="dds-close" onclick="closeDayDetail()"><i data-lucide="x"></i></button>
+    </div>
+    <div id="day-detail-events" class="dds-events"></div>
+</div>
+<div id="dds-overlay" class="dds-overlay" onclick="closeDayDetail()"></div>
+
 <!-- Mobile Bottom Nav Bar -->
 <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
     <button class="mbn-item active" id="mbn-calendar" onclick="navigate('calendar');setMbnActive('mbn-calendar')">

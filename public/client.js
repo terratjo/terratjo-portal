@@ -150,7 +150,7 @@ function renderCalendar() {
     let cls = isToday ? 'today' : isWE ? 'weekend' : ''; let blks = '';
     app.bookings.forEach(b => {
       if (ds >= b.checkin && ds < b.checkout) {
-        const lbl = ds === b.checkin ? b.guestName : '·';
+        const lbl = ds === b.checkin ? (b.guestName||'').split(' ')[0] : '';
         blks += `<div class="booking-block booking-${b.status}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
       }
     });
@@ -158,8 +158,41 @@ function renderCalendar() {
   }
   const total = first + dim; const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${i}</div></div>`;
-  document.querySelectorAll('.day-cell[data-date]').forEach(cell => cell.addEventListener('click', () => openForm('booking', cell.dataset.date, null)));
+  document.querySelectorAll('.day-cell[data-date]').forEach(cell => cell.addEventListener('click', () => {
+    if (window.innerWidth <= 768) { showDayDetail(cell.dataset.date); }
+    else { openForm('booking', cell.dataset.date, null); }
+  }));
 }
+
+// ── Day Detail Sheet (mobile) ─────────────────────────────────
+function showDayDetail(dateStr) {
+  const sheet = $('day-detail-sheet');
+  const dateEl = $('day-detail-date');
+  const eventsEl = $('day-detail-events');
+  if (!sheet) return;
+  const d = new Date(dateStr + 'T00:00:00');
+  const wds = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  dateEl.textContent = wds[d.getDay()] + ' · ' + d.getDate() + ' ' + mos[d.getMonth()] + ' ' + d.getFullYear();
+  const dayBkgs = (app.bookings||[]).filter(b => dateStr >= b.checkin && dateStr < b.checkout);
+  const statusColor = s => s==='confirmed'?'var(--confirmed)':s==='awaiting'?'var(--awaiting)':s==='quotation'?'var(--quotation)':'var(--cancelled)';
+  if (!dayBkgs.length) {
+    eventsEl.innerHTML = '<div class="dds-empty">No bookings this day</div>';
+  } else {
+    eventsEl.innerHTML = dayBkgs.map(b => `<div class="dds-event" onclick="openIPM('${b.id}');closeDayDetail();">
+      <div class="dds-dot" style="background:${statusColor(b.status)}"></div>
+      <div class="dds-info">
+        <div class="dds-name">${b.guestName}</div>
+        <div class="dds-sub">${getRoomName(b.room)} &middot; ${shortDate(b.checkin)} &rarr; ${shortDate(b.checkout)}</div>
+      </div>
+      <span class="dds-chevron">›</span>
+    </div>`).join('');
+  }
+  eventsEl.innerHTML += `<button class="btn btn-outline dds-new" onclick="openForm('booking','${dateStr}',null);closeDayDetail();">+ New Booking for this day</button>`;
+  sheet.classList.add('active');
+}
+function closeDayDetail() { const s=$('day-detail-sheet'); if(s) s.classList.remove('active'); }
+window.closeDayDetail = closeDayDetail;
 $('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
 $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
 
