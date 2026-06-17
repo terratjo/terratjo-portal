@@ -71,6 +71,22 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) { showToast('Login failed: ' + e.message); }
     });
   }
+
+  // Password visibility toggle
+  const toggleBtn = $('password-toggle');
+  const passInput = $('login-pass');
+  const eyeOpen = $('eye-open');
+  const eyeClosed = $('eye-closed');
+  if (toggleBtn && passInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = passInput.type === 'password';
+      passInput.type = isHidden ? 'text' : 'password';
+      eyeOpen.style.display = isHidden ? 'none' : '';
+      eyeClosed.style.display = isHidden ? '' : 'none';
+      toggleBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+    });
+  }
+
   if (token) initApp(); else showLogin();
 });
 
