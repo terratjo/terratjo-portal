@@ -574,10 +574,10 @@
         </div>
         <div class="ipm-actions ipm-footer">
             <button class="btn btn-outline" id="ipm-btn-close">Close</button>
-            <button class="btn btn-danger" id="ipm-btn-cancel"><i data-lucide="x"></i> Cancel Booking</button>
             <button class="btn btn-secondary" id="ipm-btn-edit"><i data-lucide="pencil"></i> Edit Form</button>
             <button class="btn btn-secondary" id="ipm-btn-email"><i data-lucide="mail"></i> Send Email</button>
             <button class="btn btn-primary" id="ipm-btn-print"><i data-lucide="printer"></i> Print / PDF</button>
+            <button class="btn btn-danger" id="ipm-btn-cancel"><i data-lucide="x"></i> Cancel Booking</button>
             <button class="btn btn-danger" id="ipm-btn-delete" title="Delete Booking" style="background:#7f1d1d;border-color:#7f1d1d;padding:9px 12px;"><i data-lucide="trash-2"></i></button>
         </div>
     </div>
@@ -594,16 +594,16 @@
 <!-- Mobile Bottom Nav Bar -->
 <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
     <button class="mbn-item active" id="mbn-calendar" onclick="navigate('calendar');setMbnActive('mbn-calendar')">
-        <span class="mbn-icon">📅</span><span class="mbn-label">Calendar</span>
+        <span class="mbn-icon"><i data-lucide="calendar"></i></span><span class="mbn-label">Calendar</span>
     </button>
     <button class="mbn-item" id="mbn-bookings" onclick="navigate('all-bookings');setMbnActive('mbn-bookings')">
-        <span class="mbn-icon">☰</span><span class="mbn-label">Bookings</span>
+        <span class="mbn-icon"><i data-lucide="list"></i></span><span class="mbn-label">Bookings</span>
     </button>
     <button class="mbn-item" id="mbn-invoices" onclick="navigate('invoices');setMbnActive('mbn-invoices')">
-        <span class="mbn-icon">🧾</span><span class="mbn-label">Invoices</span>
+        <span class="mbn-icon"><i data-lucide="file-text"></i></span><span class="mbn-label">Invoices</span>
     </button>
     <button class="mbn-item" id="mbn-settings" onclick="navigate('settings');setMbnActive('mbn-settings')">
-        <span class="mbn-icon">⚙️</span><span class="mbn-label">Settings</span>
+        <span class="mbn-icon"><i data-lucide="settings"></i></span><span class="mbn-label">Settings</span>
     </button>
 </nav>
 
