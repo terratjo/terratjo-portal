@@ -103,6 +103,13 @@
                         <button class="tab-btn" data-filter="quotation">Quotations</button>
                         <button class="tab-btn" data-filter="cancelled">Cancelled / Expired</button>
                     </div>
+                    <select id="bookings-filter-select" class="mobile-filter-select" onchange="applyBookingsFilter(this.value)">
+                        <option value="all">All Bookings</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="awaiting">Awaiting Payment</option>
+                        <option value="quotation">Quotations</option>
+                        <option value="cancelled">Cancelled / Expired</option>
+                    </select>
                 </div>
                 <div class="data-table-wrapper">
                     <table class="data-table">
@@ -591,6 +598,18 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="client.js"></script>
+<!-- Month Picker Sheet (mobile) -->
+<div id="month-picker-sheet" class="month-picker-sheet">
+    <div class="dds-bar"></div>
+    <div class="dds-header">
+        <span class="dds-date">Select Month</span>
+        <button class="dds-close" onclick="closeMonthPicker()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="mps-year-row" id="mps-year-row"></div>
+    <div class="mps-months" id="mps-months"></div>
+</div>
+<div id="mps-overlay" class="dds-overlay" onclick="closeMonthPicker()"></div>
+
 <!-- Day Detail Sheet (mobile) -->
 <div id="day-detail-sheet" class="day-detail-sheet">
     <div class="dds-bar"></div>

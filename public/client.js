@@ -191,8 +191,45 @@ function showDayDetail(dateStr) {
   eventsEl.innerHTML += `<button class="btn btn-outline dds-new" onclick="openForm('booking','${dateStr}',null);closeDayDetail();">+ New Booking for this day</button>`;
   sheet.classList.add('active');
 }
-function closeDayDetail() { const s=$('day-detail-sheet'); if(s) s.classList.remove('active'); }
+function closeDayDetail() { const s=$('day-detail-sheet'); if(s) s.classList.remove('active'); $('dds-overlay')?.classList.remove('active'); }
 window.closeDayDetail = closeDayDetail;
+
+// ── Month Picker (mobile) ─────────────────────────────────────
+function openMonthPicker() {
+  const sheet = $('month-picker-sheet'); if (!sheet) return;
+  const yr = calYear;
+  $('mps-year-row').innerHTML = [yr-1, yr, yr+1, yr+2].map(y =>
+    `<button class="mps-year ${y===calYear?'active':''}" onclick="selectMpsYear(${y})">${y}</button>`
+  ).join('');
+  renderMpsMonths(calYear);
+  sheet.classList.add('active'); $('mps-overlay')?.classList.add('active');
+}
+function renderMpsMonths(yr) {
+  const mos=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('mps-months').innerHTML = mos.map((m,i) =>
+    `<button class="mps-month ${i===calMonth&&yr===calYear?'active':''}" onclick="selectMpsMonth(${i},${yr})">${m}</button>`
+  ).join('');
+}
+function selectMpsYear(y) {
+  document.querySelectorAll('.mps-year').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mps-year').forEach(b=>{if(parseInt(b.textContent)===y)b.classList.add('active');});
+  renderMpsMonths(y);
+}
+function selectMpsMonth(month,year){calMonth=month;calYear=year;renderCalendar();closeMonthPicker();}
+function closeMonthPicker(){$('month-picker-sheet')?.classList.remove('active');$('mps-overlay')?.classList.remove('active');}
+window.openMonthPicker=openMonthPicker; window.selectMpsYear=selectMpsYear;
+window.selectMpsMonth=selectMpsMonth; window.closeMonthPicker=closeMonthPicker;
+
+// Mobile tap on month text → open picker
+$('current-month-display')?.addEventListener('click', ()=>{ if(window.innerWidth<=768) openMonthPicker(); });
+
+// Booking filter select sync (desktop tabs stay active)
+function applyBookingsFilter(val){
+  renderBookings(val);
+  document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===val));
+}
+window.applyBookingsFilter = applyBookingsFilter;
+
 $('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
 $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
 
