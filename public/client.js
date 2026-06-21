@@ -48,9 +48,12 @@ const nightsCount = (ci, co) => Math.max(1, Math.round((new Date(co) - new Date(
 const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).name;
 const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
 const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); return acc + b.cleaningFee + b.deposit + tax; };
+const todayStr = fmt(today);
+const isExpired = b => b.status === 'quotation' && b.checkin < todayStr;
+const effStatus = b => isExpired(b) ? 'expired' : b.status;
 
 function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
-function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled' }; const l = { confirmed:'Confirmed', awaiting:'Awaiting Payment', quotation:'Quotation', cancelled:'Cancelled' }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
+function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:'Confirmed', awaiting:'Awaiting Payment', quotation:'Quotation', cancelled:'Cancelled', expired:'Expired' }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
 function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">Quotation</span>` : `<span class="badge badge-invoice">Invoice</span>`; }
 
 // ── Auth UI ─────────────────────────────────────────────────────
@@ -151,7 +154,7 @@ function renderCalendar() {
     app.bookings.forEach(b => {
       if (ds >= b.checkin && ds < b.checkout) {
         const lbl = ds === b.checkin ? (b.guestName||'').split(' ')[0] : '';
-        blks += `<div class="booking-block booking-${b.status}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
+        blks += `<div class="booking-block booking-${effStatus(b)}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
       }
     });
     grid.innerHTML += `<div class="day-cell" data-date="${ds}"><div class="day-number ${cls}">${d}</div>${blks}</div>`;
@@ -236,24 +239,36 @@ $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth >
 // ── Tables ───────────────────────────────────────────────────────
 function renderBookings(filter) {
   const tb = $('bookings-tbody'); if (!tb) return;
-  const rows = app.bookings.filter(b => filter === 'all' || b.status === filter);
+  const rows = app.bookings.filter(b => {
+    const es = effStatus(b);
+    if (filter === 'all') return true;
+    if (filter === 'cancelled') return b.status === 'cancelled' || es === 'expired';
+    if (filter === 'quotation') return b.status === 'quotation' && es !== 'expired';
+    return b.status === filter;
+  });
   tb.innerHTML = '';
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(b.status)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
 
 function renderInvoices(filter) {
   const tb = $('invoices-tbody'); if (!tb) return;
-  const rows = app.bookings.filter(b => b.status !== 'cancelled').filter(b => filter === 'all' || (filter === 'invoice' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
+  // Invoices page shows all non-cancelled docs; expired quotations stay visible
+  const rows = app.bookings
+    .filter(b => b.status !== 'cancelled')
+    .filter(b => filter === 'all'
+      || (filter === 'invoice' && b.type === 'invoice')
+      || (filter === 'quotation' && b.type === 'quotation'));
   tb.innerHTML = '';
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">No documents found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(b.status)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
+    const es = effStatus(b);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(es)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
@@ -381,8 +396,10 @@ window.openIPM = function(id) {
   const b = app.bookings.find(x => x.id === id); if (!b) return; currentIPMId = id;
   const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate, taxAmt = Math.round((acc + b.cleaningFee) * (b.tax/100)), grandTotal = acc + b.cleaningFee + b.deposit + taxAmt;
   $('ipm-brand').textContent = app.settings.brand||'Terratjo Room'; $('ipm-brand-addr').textContent = app.settings.invAddress||'';
-  const docLabel = b.status==='cancelled'?'CANCELLED':(b.type==='quotation'?'QUOTATION':'INVOICE');
-  const docEl = $('ipm-doc-type'); docEl.textContent = docLabel; docEl.style.color = b.status==='cancelled'?'#b91c1c':'var(--primary)';
+  const isExpiredQ = isExpired(b);
+  const docLabel = b.status==='cancelled' ? 'CANCELLED' : (isExpiredQ ? 'EXPIRED QUOTATION' : (b.type==='quotation' ? 'QUOTATION' : 'INVOICE'));
+  const docEl = $('ipm-doc-type'); docEl.textContent = docLabel;
+  docEl.style.color = b.status==='cancelled' ? '#b91c1c' : (isExpiredQ ? '#6b7280' : 'var(--primary)');
   $('ipm-doc-date').textContent = 'Date: ' + shortDate(fmt(today));
   const stamp = $('ipm-cancelled-stamp'); b.status==='cancelled'?stamp.classList.remove('hidden'):stamp.classList.add('hidden');
   $('ipm-f-name').value = b.guestName||''; $('ipm-f-addr').value = b.address||''; $('ipm-meta-contact').textContent = (b.guestEmail||'') + (b.phone?' · '+b.phone:'');
@@ -396,7 +413,11 @@ window.openIPM = function(id) {
   const waIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#000" style="vertical-align:middle;margin-right:5px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
   const igIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`;
   $('ipm-c-phone').innerHTML = waIcon + (app.settings.phone||''); $('ipm-c-social').innerHTML = igIcon + (app.settings.social||'').replace(/^@/,''); $('ipm-footer-msg').textContent = app.settings.notes||'';
-  const isCancelled = b.status==='cancelled'; $('ipm-btn-cancel').style.display = isCancelled?'none':''; $('ipm-btn-edit').style.display = isCancelled?'none':''; $('ipm-overlay').classList.add('active');
+  const isCancelled = b.status==='cancelled';
+  $('ipm-btn-cancel').style.display = isCancelled ? 'none' : '';
+  $('ipm-btn-edit').style.display = isCancelled ? 'none' : '';
+  $('ipm-btn-convert').style.display = b.status === 'quotation' ? '' : 'none';
+  $('ipm-overlay').classList.add('active');
 };
 $('ipm-t-rate')?.addEventListener('input', () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
@@ -427,6 +448,15 @@ $('ipm-btn-email')?.addEventListener('click', () => {
   window.open('mailto:'+(b.guestEmail||'')+'?subject='+sub+'&body='+body); showToast('Email client opened!');
 });
 $('ipm-btn-print')?.addEventListener('click', () => printInvoice());
+$('ipm-btn-convert')?.addEventListener('click', async () => {
+  const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
+  if (!confirm('Mark this quotation as paid and convert to Invoice?')) return;
+  try {
+    await api.put(`/bookings/${b.id}`, { ...b, type:'invoice', status:'confirmed' });
+    showToast('Converted to Invoice ✓');
+    await loadData(); openIPM(b.id); refreshCurrentPage();
+  } catch(e) { showToast('Conversion failed: ' + e.message); }
+});
 
 // ── Data Load & Init ──────────────────────────────────────────────
 async function loadData() {
