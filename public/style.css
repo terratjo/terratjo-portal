@@ -257,6 +257,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 /* IPM footer actions */
 .ipm-actions{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:#fff;flex-shrink:0;flex-wrap:wrap;}
 .ipm-actions .btn-outline{margin-right:auto;}
+/* Desktop: ipm-btn-grid is invisible – children flow as normal flex items */
+.ipm-btn-grid{display:contents;}
 
 /* ── LOGIN MODAL – compact & modern ─────────────────────── */
 .login-modal{max-width:380px;}
@@ -493,34 +495,51 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     .ipm-payment-row{flex-direction:column;gap:8px;}
     .ipm-contact-info{text-align:left;}
 
-    /* ── IPM footer – clean & organized ──────────────── */
+    /* ── IPM footer – 2×3 grid (mobile only) ──────────────── */
     .ipm-footer{
         display:flex!important;flex-direction:column!important;
-        gap:8px!important;padding:12px 14px!important;
+        gap:10px!important;padding:14px!important;
         flex-wrap:nowrap!important;
     }
-    /* Print: primary, full width */
-    #ipm-btn-print{order:-3;width:100%!important;padding:12px!important;font-size:14px!important;}
-    /* Edit + Email: side by side */
-    .ipm-footer-row{display:flex;gap:8px;width:100%;}
-    #ipm-btn-edit{flex:1;order:-2;background:#f5f5f7!important;color:var(--text-dark)!important;border-color:transparent!important;}
-    #ipm-btn-email{flex:1;order:-1;background:#f5f5f7!important;color:var(--text-dark)!important;border-color:transparent!important;}
-    /* Close: full width ghost */
-    #ipm-btn-close{order:10;width:100%!important;color:var(--text-mid)!important;background:#f5f5f7!important;border-color:transparent!important;}
-    /* Cancel + Delete: plain text, subtle red */
-    #ipm-btn-cancel{
-        order:8;background:transparent!important;border:none!important;
-        color:var(--cancelled)!important;font-size:12.5px!important;
-        font-weight:500!important;padding:4px 8px!important;width:auto!important;
-        text-align:center;
+    #ipm-btn-print{
+        width:100%!important;order:-1;
+        padding:14px!important;font-size:14px!important;
     }
-    #ipm-btn-delete{
-        order:9;background:transparent!important;border:none!important;
-        color:var(--cancelled)!important;font-size:12.5px!important;
-        font-weight:500!important;padding:4px 8px!important;width:auto!important;
-        text-align:center;
+    #ipm-btn-close{
+        width:100%!important;order:10;
+        color:var(--text-mid)!important;
+        background:#f5f5f7!important;
+        border-color:transparent!important;
     }
-    .ipm-footer-destructive{display:flex;justify-content:center;gap:20px;order:9;}
+    /* Grid wrapper – 2 cols, auto rows */
+    .ipm-btn-grid{
+        display:grid!important;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        width:100%;
+    }
+    /* Row 1: Edit | Email */
+    #ipm-btn-edit,#ipm-btn-email{
+        padding:13px!important;
+        background:#f5f5f7!important;
+        color:var(--text-dark)!important;
+        border-color:transparent!important;
+        justify-content:center;
+    }
+    /* Row 2: Cancel | Delete – icon-only, red tint */
+    #ipm-btn-cancel,#ipm-btn-delete{
+        padding:13px!important;
+        background:rgba(220,38,38,.07)!important;
+        color:var(--cancelled)!important;
+        border-color:transparent!important;
+        justify-content:center;
+    }
+    /* Row 3: Mark as Paid – spans full width */
+    .ipm-convert-btn{
+        grid-column:1 / -1;
+        padding:14px!important;
+        font-size:14px!important;
+    }
 
     /* Settings */
     .settings-card{grid-template-columns:1fr;}
