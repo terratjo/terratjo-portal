@@ -49,7 +49,8 @@ const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).n
 const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
 const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); return acc + b.cleaningFee + b.deposit + tax; };
 const todayStr = fmt(today);
-const isExpired = b => b.status === 'quotation' && b.checkin < todayStr;
+// isExpired: true if server already set status='expired', OR quotation check-in date has passed
+const isExpired = b => b.status === 'expired' || (b.status === 'quotation' && b.checkin < todayStr);
 const effStatus = b => isExpired(b) ? 'expired' : b.status;
 
 function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }

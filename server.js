@@ -153,12 +153,27 @@ async function syncToSheets(action, booking) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...booking })
     });
+    console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`);
   } catch (e) {
     console.warn('Google Sheets sync failed (non-critical):', e.message);
   }
 }
 
-
+// ── Auto-expire Quotations after 6 hours ────────────────────
+async function expireOldQuotations() {
+  try {
+    const result = await db.execute({
+      sql: `UPDATE bookings SET status='expired' WHERE status='quotation' AND created_at < datetime('now', '-6 hours')`,
+      args: []
+    });
+    if (result.rowsAffected > 0) {
+      console.log(`⏰ Auto-expired ${result.rowsAffected} quotation(s)`);
+      broadcast({ type: 'sync', target: 'all' });
+    }
+  } catch (e) {
+    console.warn('Expiry job error:', e.message);
+  }
+}
 
 
 // ── Settings ──────────────────────────────────────────────────────
@@ -217,14 +232,17 @@ app.post('/api/bookings', auth, async (req, res) => {
   const { id,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
           checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes } = req.body;
   const idGen = id || `BK-${String(Date.now()).slice(-6)}`;
-  const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
-  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
-  try {
-    await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,deposit,tax,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes] });
-    syncToSheets('create', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
-    broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+    const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
+    const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
+    try {
+      await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,deposit,tax,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes] });
+      // Only sync to Google Sheets when booking is confirmed
+      if (status === 'confirmed') {
+        syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
+      }
+      broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
+    } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/bookings/:id', auth, async (req, res) => {
   const { type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
@@ -234,7 +252,10 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
   const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,deposit=?,tax=?,status=?,notes=? WHERE id=?`,
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
-  syncToSheets('update', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
+  // Only sync to Google Sheets when status becomes confirmed
+  if (status === 'confirmed') {
+    syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
+  }
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 app.delete('/api/bookings/:id', auth, async (req, res) => {
@@ -253,5 +274,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Start ─────────────────────────────────────────────────────────
 initDB()
-  .then(() => app.listen(PORT, () => console.log(`🚀 Terratjo Portal running on http://localhost:${PORT}`)))
+  .then(() => {
+    app.listen(PORT, () => console.log(`🚀 Terratjo Portal running on http://localhost:${PORT}`));
+    // Run expiry check immediately on boot, then every 10 minutes
+    expireOldQuotations();
+    setInterval(expireOldQuotations, 10 * 60 * 1000);
+  })
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
