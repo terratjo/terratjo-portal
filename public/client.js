@@ -286,7 +286,7 @@ function renderReports(filter) {
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td></tr>`;
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}</td></tr>`;
   });
   $('reports-totals').innerHTML = `<span>Quotations value: <strong>${idr(qVal)}</strong></span><span>Bookings revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
 }
