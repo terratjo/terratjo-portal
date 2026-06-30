@@ -185,6 +185,14 @@ async function expireOldQuotations() {
 
 
 // ── Settings ──────────────────────────────────────────────────────
+// Public endpoint – returns only the logo (no auth required)
+app.get('/api/logo', async (req, res) => {
+  try {
+    const { rows } = await db.execute("SELECT value FROM settings WHERE key='logo'");
+    const logo = rows[0]?.value || '';
+    res.json({ logo });
+  } catch (e) { res.json({ logo: '' }); }
+});
 app.get('/api/settings', auth, async (req, res) => {
   const { rows } = await db.execute('SELECT key, value FROM settings');
   const obj = {}; rows.forEach(r => obj[r.key] = r.value); res.json(obj);

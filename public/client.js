@@ -176,6 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Pre-fetch logo for login modal (public endpoint, no auth needed)
+  fetch('/api/logo').then(r => r.json()).then(d => {
+    if (d.logo) {
+      const el = document.getElementById('login-logo-img');
+      if (el) el.src = d.logo;
+    }
+  }).catch(() => {});
+
   if (token) initApp(); else showLogin();
 });
 
@@ -601,6 +609,9 @@ function applyLogo(dataUrl) {
   ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle'].forEach(id => {
     const el = $(id); if (el) el.innerHTML = imgTag;
   });
+  // Also update login modal logo
+  const loginLogoImg = document.getElementById('login-logo-img');
+  if (loginLogoImg) loginLogoImg.src = src;
 
   const removeBtn = $('btn-remove-logo');
   if (removeBtn) removeBtn.style.display = dataUrl ? 'inline-flex' : 'none';
