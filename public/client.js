@@ -524,9 +524,8 @@ function updateTopBar() {
 
 // ── Logo Upload ───────────────────────────────────────────────────
 function applyLogo(dataUrl) {
-  const imgTag = dataUrl
-    ? `<img src="${dataUrl}" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">`
-    : `<i data-lucide="home"></i>`;
+  const src = dataUrl || '/logo.png';
+  const imgTag = `<img src="${src}" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">`;
 
   ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle'].forEach(id => {
     const el = $(id); if (el) el.innerHTML = imgTag;
@@ -537,8 +536,6 @@ function applyLogo(dataUrl) {
 
   const hintTitle = document.querySelector('.logo-upload-hint-title');
   if (hintTitle) hintTitle.textContent = dataUrl ? 'Click to change logo' : 'Click to upload logo';
-
-  if (!dataUrl) lucide.createIcons();
 }
 
 function triggerLogoUpload() { $('logo-upload')?.click(); }

@@ -167,7 +167,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .room-card-actions{display:flex;gap:8px;}
 
 /* ── SETTINGS ──────────────────────────────────────────── */
-.settings-container{max-width:900px;}
+.settings-container{max-width:900px;margin:0 auto;}
 .settings-card{display:grid;grid-template-columns:1fr 300px;gap:24px;background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);padding:26px;box-shadow:var(--shadow-sm);}
 @media(max-width:800px){.settings-card{grid-template-columns:1fr;}}
 .settings-preview-box{background:var(--bg-light);border-radius:var(--radius);border:1px solid var(--border);padding:18px;}
@@ -263,7 +263,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 /* ── LOGIN MODAL – compact & modern ─────────────────────── */
 .login-modal{max-width:380px;}
 .login-modal-brand{text-align:center;padding:28px 24px 0;}
-.login-logo{width:50px;height:50px;background:var(--primary);border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--bg-darker);margin:0 auto 12px;}
+.login-logo{width:90px;height:90px;background:transparent;border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--bg-darker);margin:0 auto 16px;overflow:hidden;}
 .login-logo i{width:22px;height:22px;}
 .login-modal-brand h2{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:4px;color:var(--text-dark);}
 .login-modal-brand p{font-size:12px;color:var(--text-light);margin-bottom:0;}
@@ -640,3 +640,53 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .promo-type-btn { flex:1; padding:8px 12px; border:none; background:#fff; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-light); transition:all .15s; }
 .promo-type-btn.active { background:var(--primary); color:#fff; font-weight:600; }
 .promo-type-btn:hover:not(.active) { background:#f9fafb; }
+
+/* ── Mobile: Settings + Promo + Login ────────────────────────────── */
+@media(max-width:768px){
+  /* Settings container full width with padding */
+  .settings-container{max-width:100%;padding:0 10px;}
+  .settings-card{padding:16px;gap:16px;}
+  .settings-preview-box{display:none;}
+
+  /* Security card centered on mobile */
+  .settings-container > div[style]{margin-left:auto;margin-right:auto;}
+
+  /* Promo section full width with padding */
+  #page-settings > div[style*="max-width:900px"]{
+    max-width:100%!important;
+    margin:12px 10px!important;
+    padding-bottom:20px!important;
+  }
+  #page-settings > div[style*="max-width:900px"] > div{
+    padding:16px!important;
+  }
+
+  /* Promo table - horizontal scroll on mobile */
+  .promo-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .promo-table{min-width:560px;font-size:12px;}
+  .promo-table thead th,.promo-table tbody td{padding:8px 10px;}
+
+  /* Promo type toggle */
+  .promo-type-toggle{flex-direction:row;}
+  .promo-type-btn{padding:8px 6px;font-size:12px;}
+
+  /* Login modal on mobile */
+  .login-modal{max-width:94vw!important;margin:0 auto;}
+  .login-logo{width:72px;height:72px;}
+
+  /* Add Promo button - full width on very small screens */
+  #btn-add-promo{font-size:12px;padding:8px 12px;}
+
+  /* Promo modal full screen on mobile */
+  #promo-modal .modal{max-width:96vw;margin:10px auto;}
+}
+
+@media(max-width:480px){
+  /* Stack the promo header row vertically on very small screens */
+  #promos-list > div > div:first-child{flex-direction:column;gap:10px;align-items:flex-start!important;}
+  #btn-add-promo{align-self:flex-start;}
+
+  /* Login modal */
+  .login-logo{width:60px;height:60px;}
+  .login-modal-brand h2{font-size:18px;}
+}
