@@ -321,6 +321,27 @@ app.delete('/api/bookings/:id/permanent', auth, async (req, res) => {
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 
+// ── Dynamic Favicon (always matches uploaded logo) ────────────────
+async function serveLogo(req, res, fallback) {
+  try {
+    const { rows } = await db.execute("SELECT value FROM settings WHERE key='logo'");
+    const logo = rows[0]?.value || '';
+    if (logo && logo.includes('base64,')) {
+      const mimeMatch = logo.match(/data:([^;]+);base64,/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+      const buf = Buffer.from(logo.split(',')[1], 'base64');
+      res.set('Content-Type', mime);
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.send(buf);
+    }
+  } catch(e) {}
+  res.sendFile(path.join(__dirname, 'public', fallback));
+}
+app.get('/favicon.png', (req, res) => serveLogo(req, res, 'favicon.png'));
+app.get('/favicon.ico', (req, res) => serveLogo(req, res, 'favicon.png'));
+app.get('/apple-touch-icon.png', (req, res) => serveLogo(req, res, 'favicon.png'));
+app.get('/apple-touch-icon-precomposed.png', (req, res) => serveLogo(req, res, 'favicon.png'));
+
 // ── Serve Frontend ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 

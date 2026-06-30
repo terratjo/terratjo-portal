@@ -728,3 +728,125 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   .lang-toggle { bottom:70px; right:16px; }
   .lang-btn { padding:6px 14px; font-size:11px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE VIEW — Comprehensive improvements (≤ 768px)
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width:768px){
+
+  /* ── Body & Layout ─────────────────────────────────────── */
+  body { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
+  .app-container { flex-direction:row; height:100dvh; }
+  .page-wrapper  { height:100dvh; overflow:hidden; }
+
+  /* ── Topbar ────────────────────────────────────────────── */
+  .top-bar {
+    height:52px; padding:0 12px; gap:8px;
+    border-bottom:1.5px solid var(--border);
+    box-shadow:0 1px 6px rgba(0,0,0,.06);
+  }
+  .top-bar-left { gap:8px; flex:1; min-width:0; }
+  .page-title   { font-size:16px; font-weight:700; }
+  .location-badge { font-size:10.5px; padding:3px 8px; white-space:nowrap; }
+
+  /* Hide text labels on top-bar action buttons, show only icon */
+  .top-bar-right .btn span { display:none; }
+  .top-bar-right .btn { padding:9px; border-radius:10px; min-width:36px; height:36px; }
+  .top-bar-right .btn i { width:17px; height:17px; margin:0; }
+
+  /* ── Page content padding ──────────────────────────────── */
+  .page-content { padding:12px 10px 72px; }
+
+  /* ── Modals — full-width bottom sheet on mobile ────────── */
+  .modal-overlay { align-items:flex-end; padding:0; }
+  .modal {
+    width:100%; max-width:100%!important; border-radius:20px 20px 0 0;
+    max-height:92dvh; overflow-y:auto; margin:0!important;
+    padding-bottom:env(safe-area-inset-bottom, 16px);
+  }
+  /* Login modal stays centered (not bottom sheet) */
+  #login-overlay { align-items:center; padding:16px; }
+  #login-overlay .modal {
+    border-radius:20px!important; max-height:95dvh;
+    width:100%; max-width:420px!important;
+  }
+
+  /* ── Modal headers ─────────────────────────────────────── */
+  .modal-header { padding:16px 18px 12px; }
+  .modal-header h3 { font-size:17px; }
+  .modal-body { padding:0 18px 18px; }
+
+  /* ── Booking cards in All Bookings view ────────────────── */
+  .booking-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .booking-table      { min-width:600px; font-size:12.5px; }
+  .booking-table th,
+  .booking-table td   { padding:9px 10px; }
+
+  /* ── Reports stat cards ─────────────────────────────────── */
+  .reports-stat-cards { grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-card { padding:14px; border-radius:14px; }
+  .stat-number { font-size:22px; }
+
+  /* ── Invoice list ──────────────────────────────────────── */
+  .invoices-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .invoices-table      { min-width:540px; font-size:12.5px; }
+
+  /* ── Settings ──────────────────────────────────────────── */
+  .settings-container { max-width:100%; padding:0 10px 80px; }
+  .settings-card { padding:16px; }
+  .form-row { flex-direction:column; gap:12px; }
+  .form-row .form-group { width:100%; }
+
+  /* ── Login modal ───────────────────────────────────────── */
+  .login-modal { padding:28px 22px 24px; }
+  .login-modal-brand { margin-bottom:18px; }
+  .login-logo { width:76px; height:76px; }
+  .login-modal-brand h2 { font-size:22px; }
+  .login-form .btn { padding:13px; font-size:15px; border-radius:12px; }
+  #login-user, #login-pass { font-size:16px; padding:12px 14px; border-radius:12px; }
+
+  /* ── Touch target sizes (min 44px) ─────────────────────── */
+  .nav-item { padding:12px 18px; min-height:44px; }
+  .btn-logout { width:36px; height:36px; }
+
+  /* ── Calendar day cells ─────────────────────────────────── */
+  .calendar-day { min-height:58px; }
+
+  /* ── Day detail sheet ───────────────────────────────────── */
+  .day-detail-sheet {
+    border-radius:20px 20px 0 0;
+    padding-bottom:env(safe-area-inset-bottom, 16px);
+  }
+
+  /* ── Sidebar overlay ────────────────────────────────────── */
+  .sidebar-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
+    z-index:499; display:none; backdrop-filter:blur(2px);
+  }
+  .sidebar.mobile-open ~ .sidebar-overlay,
+  .sidebar-overlay.active { display:block; }
+
+  /* ── Bottom safe area for iPhone ───────────────────────── */
+  .page-content { padding-bottom:max(72px, calc(58px + env(safe-area-inset-bottom))); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SMALL PHONES (≤ 480px)
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width:480px){
+  .reports-stat-cards { grid-template-columns:1fr; }
+  .ipm-stay-grid      { grid-template-columns:1fr; }
+
+  .login-logo { width:64px; height:64px; }
+  .login-modal-brand h2 { font-size:19px; }
+  .login-form .btn { font-size:14px; }
+
+  .page-title { font-size:14px; }
+  .top-bar { height:48px; }
+
+  /* Promo list header stacks */
+  #promos-list > div > div:first-child {
+    flex-direction:column; gap:8px; align-items:flex-start!important;
+  }
+  #btn-add-promo { align-self:flex-start; width:100%; justify-content:center; }
+}
