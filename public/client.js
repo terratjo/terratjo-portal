@@ -3,8 +3,11 @@ const API = '/api';
 const app = { settings: {}, rooms: [], bookings: [], promos: [] };
 let token = localStorage.getItem('terratjo_token');
 let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', lastAction = 'booking';
-const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-let calYear = today.getFullYear(), calMonth = today.getMonth();
+// Get today's date in Jakarta / WIB (UTC+7) — Intl.DateTimeFormat is the only reliable cross-browser method
+const _todayJkt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); // → "YYYY-MM-DD"
+const [_jY, _jM0, _jD] = _todayJkt.split('-').map(Number); // _jM0 is 1-indexed
+const today = new Date(_jY, _jM0 - 1, _jD); // local midnight Date (getFullYear/Month/Date work correctly)
+let calYear = _jY, calMonth = _jM0 - 1; // calMonth is 0-indexed
 
 // ── i18n (Language) ─────────────────────────────────────────────
 const LANG = {
@@ -118,7 +121,7 @@ const nightsCount = (ci, co) => Math.max(1, Math.round((new Date(co) - new Date(
 const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).name;
 const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
 const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); const promo = b.promoId ? app.promos.find(p => p.id === b.promoId) : null; const disc = promo ? (promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc)) : 0; return acc + b.cleaningFee + b.deposit + tax - disc; };
-const todayStr = fmt(today);
+const todayStr = _todayJkt; // Already "YYYY-MM-DD" in Jakarta timezone — no toISOString() UTC drift
 // isExpired: true if server already set status='expired', OR quotation check-in date has passed
 const isExpired = b => b.status === 'expired' || (b.status === 'quotation' && b.checkin < todayStr);
 const effStatus = b => isExpired(b) ? 'expired' : b.status;
@@ -227,7 +230,7 @@ function renderCalendar() {
   const first = new Date(calYear, calMonth, 1).getDay();
   const dim = new Date(calYear, calMonth + 1, 0).getDate();
   const prevDim = new Date(calYear, calMonth, 0).getDate();
-  const todayStr = fmt(today);
+  // todayStr is the global Jakarta-timezone string — no local re-declaration needed
   for (let i = first - 1; i >= 0; i--) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${prevDim - i}</div></div>`;
   for (let d = 1; d <= dim; d++) {
     const ds = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
