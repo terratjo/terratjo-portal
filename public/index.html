@@ -301,6 +301,20 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Promo Section -->
+            <div style="max-width:900px;margin-top:20px;padding-bottom:40px;">
+                <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:28px;box-shadow:var(--shadow-sm);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px;">&#127881; Promo Management</h3>
+                            <p style="color:var(--text-light);font-size:13px;">Set discounts by room and period. Staff selects promos when creating bookings.</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="btn-add-promo" style="white-space:nowrap;"><i data-lucide="plus"></i> Add Promo</button>
+                    </div>
+                    <div id="promos-list"><div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div></div>
+                </div>
+            </div>
         </main>
 
 
@@ -313,7 +327,7 @@
 <div id="login-overlay" class="modal-overlay active">
     <div class="modal form-modal login-modal">
         <div class="login-modal-brand">
-            <div class="login-logo"><i data-lucide="home"></i></div>
+            <div class="login-logo"><img src="/favicon.png" alt="Terratjo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;"></div>
             <h2>Terratjo Room</h2>
             <p>Booking Portal — Staff Access</p>
         </div>
@@ -378,6 +392,12 @@
                     <label>ROOM</label>
                     <select id="form-room"></select>
                 </div>
+                <div class="form-group" id="promo-select-group" style="display:none;">
+                    <label style="color:#16a34a;">🎉 PROMO (Optional)</label>
+                    <select id="form-promo">
+                        <option value="">— No Promo —</option>
+                    </select>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>CHECK-IN DATE</label>
@@ -431,6 +451,7 @@
                     <div class="form-summary-row"><span>Cleaning fee</span><span id="fs-cleaning">—</span></div>
                     <div class="form-summary-row"><span>Deposit</span><span id="fs-deposit">—</span></div>
                     <div class="form-summary-row"><span>Tax</span><span id="fs-tax">—</span></div>
+                    <div class="form-summary-row" id="fs-promo-row" style="display:none;color:#16a34a;font-weight:600;"><span id="fs-promo-label">Promo Discount</span><span id="fs-promo">—</span></div>
                     <div class="form-summary-total"><span>Total</span><span id="fs-total">Rp 310,000</span></div>
                 </div>
 
@@ -442,6 +463,60 @@
                     <button type="submit" class="btn btn-primary" id="btn-create-booking-form" data-action="booking">
                         <i data-lucide="calendar-plus"></i> Create Booking
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Promo Modal -->
+<div class="modal-overlay" id="promo-modal">
+    <div class="modal form-modal">
+        <div class="modal-header">
+            <h3 id="promo-modal-title">Add Promo</h3>
+            <button class="btn-icon" id="btn-close-promo-modal"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="promo-form" autocomplete="off">
+                <input type="hidden" id="promo-edit-id">
+                <div class="form-group">
+                    <label>PROMO DESCRIPTION</label>
+                    <input type="text" id="promo-name" placeholder="e.g. Weekend Special, Early Bird Discount" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>DISCOUNT TYPE</label>
+                        <div class="promo-type-toggle" id="promo-type-toggle">
+                            <button type="button" class="promo-type-btn active" data-type="percentage">% Percentage</button>
+                            <button type="button" class="promo-type-btn" data-type="fixed">Rp Fixed</button>
+                        </div>
+                        <input type="hidden" id="promo-type" value="percentage">
+                    </div>
+                    <div class="form-group">
+                        <label id="promo-value-label">DISCOUNT (%)</label>
+                        <input type="number" id="promo-value" placeholder="e.g. 10" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>APPLY TO ROOM</label>
+                    <select id="promo-room">
+                        <option value="all">All Rooms</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>START DATE</label>
+                        <input type="date" id="promo-start" required>
+                    </div>
+                    <div class="form-group">
+                        <label>END DATE</label>
+                        <input type="date" id="promo-end" required>
+                    </div>
+                </div>
+                <div id="promo-status-preview" style="display:none;text-align:center;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;font-weight:600;"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="btn-cancel-promo">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Promo</button>
                 </div>
             </form>
         </div>
@@ -553,6 +628,9 @@
                             </tr>
                             <tr id="ipm-row-tax" class="hidden">
                                 <td>Tax</td><td>—</td><td>—</td><td id="ipm-t-tax">Rp 0</td>
+                            </tr>
+                            <tr id="ipm-row-promo" class="hidden" style="color:#16a34a;font-weight:600;">
+                                <td id="ipm-t-promo-name">Promo Discount</td><td>—</td><td>—</td><td id="ipm-t-promo">—</td>
                             </tr>
                             <tr class="ipm-total-row">
                                 <td colspan="3"><strong>Total Amount</strong></td>

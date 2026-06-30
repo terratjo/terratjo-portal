@@ -1,6 +1,6 @@
 // ── Auth & State ────────────────────────────────────────────────
 const API = '/api';
-const app = { settings: {}, rooms: [], bookings: [] };
+const app = { settings: {}, rooms: [], bookings: [], promos: [] };
 let token = localStorage.getItem('terratjo_token');
 let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', lastAction = 'booking';
 const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
@@ -47,11 +47,14 @@ const shortDate = s => s ? new Date(s).toLocaleDateString('en-GB', { day:'2-digi
 const nightsCount = (ci, co) => Math.max(1, Math.round((new Date(co) - new Date(ci)) / 86400000));
 const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).name;
 const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
-const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); return acc + b.cleaningFee + b.deposit + tax; };
+const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee) * (b.tax / 100)); const promo = b.promoId ? app.promos.find(p => p.id === b.promoId) : null; const disc = promo ? (promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc)) : 0; return acc + b.cleaningFee + b.deposit + tax - disc; };
 const todayStr = fmt(today);
 // isExpired: true if server already set status='expired', OR quotation check-in date has passed
 const isExpired = b => b.status === 'expired' || (b.status === 'quotation' && b.checkin < todayStr);
 const effStatus = b => isExpired(b) ? 'expired' : b.status;
+// Promo helpers
+const promoStatus = p => { const t = todayStr; if (!p.startDate || !p.endDate) return 'inactive'; if (t < p.startDate) return 'scheduled'; if (t > p.endDate) return 'inactive'; return 'ongoing'; };
+const calcPromoDiscount = (promo, acc) => !promo ? 0 : promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc);
 
 function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
 function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:'Confirmed', awaiting:'Awaiting Payment', quotation:'Quotation', cancelled:'Cancelled', expired:'Expired' }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
@@ -331,6 +334,7 @@ function renderSettings() {
     if (el) el.value = v;
   });
   updateSIP();
+  renderPromos();
 }
 function updateSIP() {
   $('sip-brand').textContent = $('setting-brand')?.value || '';
@@ -347,13 +351,37 @@ $('btn-save-settings')?.addEventListener('click', async () => {
 
 // ── Form Modal ────────────────────────────────────────────────────
 function populateRoomSelect() { const sel = $('form-room'); if (!sel) return; sel.innerHTML = ''; app.rooms.forEach(r => { sel.innerHTML += `<option value="${r.id}">${r.name}</option>`; }); }
+function populatePromoSelect(roomId) {
+  const sel = $('form-promo'); if (!sel) return;
+  const applicable = app.promos.filter(p => {
+    const st = promoStatus(p);
+    return (st === 'ongoing' || st === 'scheduled') && (p.roomId === 'all' || p.roomId === roomId);
+  });
+  sel.innerHTML = '<option value="">— No Promo —</option>';
+  applicable.forEach(p => {
+    const disc = p.type === 'percentage' ? `-${p.value}%` : `-${idr(p.value)}`;
+    const tag = promoStatus(p) === 'scheduled' ? ' ⏰ Scheduled' : '';
+    sel.innerHTML += `<option value="${p.id}">${p.name} (${disc})${tag}</option>`;
+  });
+  const grp = $('promo-select-group');
+  if (grp) grp.style.display = applicable.length > 0 ? '' : 'none';
+}
 function calcFormSummary() {
   const ci = $('form-checkin').value, co = $('form-checkout').value;
   const rate = +$('form-price').value||0, cleaning = +$('form-cleaning').value||0, deposit = +$('form-deposit').value||0, taxPct = +$('form-tax').value||0;
-  const n = (ci && co) ? nightsCount(ci, co) : 1; const acc = n * rate, taxAmt = Math.round((acc + cleaning) * taxPct / 100), total = acc + cleaning + deposit + taxAmt;
+  const n = (ci && co) ? nightsCount(ci, co) : 1;
+  const acc = n * rate, taxAmt = Math.round((acc + cleaning) * taxPct / 100);
+  const promoId = $('form-promo')?.value;
+  const promo = promoId ? app.promos.find(p => p.id === promoId) : null;
+  const discAmt = calcPromoDiscount(promo, acc);
+  const total = acc + cleaning + deposit + taxAmt - discAmt;
   $('fs-rate').textContent = idr(rate); $('fs-nights-label').textContent = n + ' night' + (n>1?'s':''); $('fs-nights-count').textContent = n;
   $('fs-accommodation').textContent = idr(acc); $('fs-cleaning').textContent = cleaning>0?idr(cleaning):'—';
-  $('fs-deposit').textContent = deposit>0?idr(deposit):'—'; $('fs-tax').textContent = taxPct>0?idr(taxAmt):'—'; $('fs-total').textContent = idr(total);
+  $('fs-deposit').textContent = deposit>0?idr(deposit):'—'; $('fs-tax').textContent = taxPct>0?idr(taxAmt):'—';
+  const promoRow = $('fs-promo-row'); if (promoRow) promoRow.style.display = discAmt > 0 ? '' : 'none';
+  const promoEl = $('fs-promo'); if (promoEl) promoEl.textContent = discAmt > 0 ? '-' + idr(discAmt) : '—';
+  const promoLbl = $('fs-promo-label'); if (promoLbl && promo) promoLbl.textContent = 'Promo: ' + promo.name;
+  $('fs-total').textContent = idr(total);
 }
 function openForm(type, dateStr, prefillId) {
   populateRoomSelect();
@@ -363,16 +391,19 @@ function openForm(type, dateStr, prefillId) {
     $('form-name').value = b.guestName||''; $('form-email').value = b.guestEmail||''; $('form-phone').value = b.phone||''; $('form-guests').value = b.numGuests||1; $('form-address').value = b.address||'';
     $('form-room').value = b.room; $('form-checkin').value = b.checkin; $('form-checkout').value = b.checkout; $('form-checkin-time').value = b.checkinTime||'14:00'; $('form-checkout-time').value = b.checkoutTime||'12:00';
     $('form-price').value = b.rate; $('form-cleaning').value = b.cleaningFee||0; $('form-deposit').value = b.deposit||0; $('form-tax').value = b.tax||0; $('form-notes').value = b.notes||''; $('booking-form').dataset.editId = prefillId;
+    populatePromoSelect(b.room); if ($('form-promo')) $('form-promo').value = b.promoId || '';
   } else {
     $('form-modal-title').textContent = type==='booking'?'New Booking':'New Quotation';
     $('booking-form').reset(); $('booking-form').dataset.editId = '';
     $('form-checkin').value = dateStr||fmt(today); $('form-checkout').value = fmt(addD(new Date($('form-checkin').value), 1));
     $('form-price').value = getRoomRate($('form-room').value||app.rooms[0]?.id||'r1'); $('form-guests').value=1; $('form-cleaning').value=0; $('form-deposit').value=0; $('form-tax').value=0; $('form-checkin-time').value='14:00'; $('form-checkout-time').value='12:00';
+    populatePromoSelect($('form-room').value||app.rooms[0]?.id||'');
   }
   currentFormAction = type; calcFormSummary(); $('form-modal').classList.add('active');
 }
 ['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
-$('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value); calcFormSummary(); });
+$('form-promo')?.addEventListener('change', calcFormSummary);
+$('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value); populatePromoSelect($('form-room').value); calcFormSummary(); });
 $('btn-create-booking-form')?.addEventListener('click', () => { lastAction = 'booking'; });
 $('btn-create-quotation-form')?.addEventListener('click', () => { lastAction = 'quotation'; });
 $('booking-form')?.addEventListener('submit', async e => {
@@ -380,7 +411,7 @@ $('booking-form')?.addEventListener('submit', async e => {
   const ci = $('form-checkin').value, co = $('form-checkout').value;
   if (new Date(co) <= new Date(ci)) { showToast('Check-out must be after check-in.'); return; }
   const editId = $('booking-form').dataset.editId; const isBooking = lastAction === 'booking';
-  const data = { type:isBooking?'invoice':'quotation', guestName:$('form-name').value, guestEmail:$('form-email').value, phone:$('form-phone').value, address:$('form-address').value, numGuests:+$('form-guests').value||1, room:$('form-room').value, checkin:ci, checkout:co, checkinTime:$('form-checkin-time').value||'14:00', checkoutTime:$('form-checkout-time').value||'12:00', rate:+$('form-price').value||310000, cleaningFee:+$('form-cleaning').value||0, deposit:+$('form-deposit').value||0, tax:+$('form-tax').value||0, notes:$('form-notes').value, status:isBooking?'awaiting':'quotation' };
+  const data = { type:isBooking?'invoice':'quotation', guestName:$('form-name').value, guestEmail:$('form-email').value, phone:$('form-phone').value, address:$('form-address').value, numGuests:+$('form-guests').value||1, room:$('form-room').value, checkin:ci, checkout:co, checkinTime:$('form-checkin-time').value||'14:00', checkoutTime:$('form-checkout-time').value||'12:00', rate:+$('form-price').value||310000, cleaningFee:+$('form-cleaning').value||0, deposit:+$('form-deposit').value||0, tax:+$('form-tax').value||0, notes:$('form-notes').value, status:isBooking?'awaiting':'quotation', promoId:$('form-promo')?.value||null };
   try {
     let res;
     if (editId) { await api.put(`/bookings/${editId}`, data); showToast('Booking updated!'); res = { id: editId }; }
@@ -395,7 +426,11 @@ $('btn-new-quotation')?.addEventListener('click', () => openForm('quotation', nu
 // ── Invoice Preview Modal (IPM) ───────────────────────────────────
 window.openIPM = function(id) {
   const b = app.bookings.find(x => x.id === id); if (!b) return; currentIPMId = id;
-  const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate, taxAmt = Math.round((acc + b.cleaningFee) * (b.tax/100)), grandTotal = acc + b.cleaningFee + b.deposit + taxAmt;
+  const n = nightsCount(b.checkin, b.checkout);
+  const acc = n * b.rate, taxAmt = Math.round((acc + b.cleaningFee) * (b.tax/100));
+  const promo = b.promoId ? app.promos.find(p => p.id === b.promoId) : null;
+  const discountAmt = calcPromoDiscount(promo, acc);
+  const grandTotal = acc + b.cleaningFee + b.deposit + taxAmt - discountAmt;
   $('ipm-brand').textContent = app.settings.brand||'Terratjo Room'; $('ipm-brand-addr').textContent = app.settings.invAddress||'';
   const isExpiredQ = isExpired(b);
   const docLabel = b.status==='cancelled' ? 'CANCELLED' : (isExpiredQ ? 'EXPIRED QUOTATION' : (b.type==='quotation' ? 'QUOTATION' : 'INVOICE'));
@@ -409,7 +444,13 @@ window.openIPM = function(id) {
   $('ipm-t-nights').textContent = n+' night'+(n>1?'s':''); $('ipm-t-rate').value = b.rate; $('ipm-t-room-amt').textContent = idr(acc);
   $('ipm-t-cleaning').textContent = idr(b.cleaningFee); $('ipm-row-cleaning').classList.toggle('hidden', b.cleaningFee<=0);
   $('ipm-t-deposit').textContent = idr(b.deposit); $('ipm-row-deposit').classList.toggle('hidden', b.deposit<=0);
-  $('ipm-t-tax').textContent = idr(taxAmt); $('ipm-row-tax').classList.toggle('hidden', b.tax<=0); $('ipm-t-grand').textContent = idr(grandTotal);
+  $('ipm-t-tax').textContent = idr(taxAmt); $('ipm-row-tax').classList.toggle('hidden', b.tax<=0);
+  // Promo row
+  if ($('ipm-row-promo')) {
+    $('ipm-row-promo').classList.toggle('hidden', discountAmt <= 0);
+    if (discountAmt > 0 && promo) { $('ipm-t-promo-name').textContent = 'Promo: ' + promo.name; $('ipm-t-promo').textContent = '-' + idr(discountAmt); }
+  }
+  $('ipm-t-grand').textContent = idr(grandTotal);
   $('ipm-bank-name').textContent = app.settings.bankName||''; $('ipm-acc-name').textContent = 'Account Name: '+(app.settings.accName||''); $('ipm-acc-no').textContent = 'Account No: '+(app.settings.accNo||'');
   const waIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#000" style="vertical-align:middle;margin-right:5px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
   const igIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`;
@@ -424,7 +465,9 @@ $('ipm-t-rate')?.addEventListener('input', () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
   const n = nightsCount($('ipm-ci-date').value||b.checkin, $('ipm-co-date').value||b.checkout);
   const rate = +$('ipm-t-rate').value||0; const acc = n*rate; const taxAmt = Math.round((acc+b.cleaningFee)*(b.tax/100));
-  $('ipm-t-room-amt').textContent = idr(acc); $('ipm-t-grand').textContent = idr(acc+b.cleaningFee+b.deposit+taxAmt);
+  const promo = b.promoId ? app.promos.find(p => p.id === b.promoId) : null;
+  const disc = calcPromoDiscount(promo, acc);
+  $('ipm-t-room-amt').textContent = idr(acc); $('ipm-t-grand').textContent = idr(acc+b.cleaningFee+b.deposit+taxAmt-disc);
 });
 function closeIPM() { $('ipm-overlay').classList.remove('active'); }
 $('ipm-btn-x')?.addEventListener('click', closeIPM); $('ipm-btn-close')?.addEventListener('click', closeIPM);
@@ -461,8 +504,8 @@ $('ipm-btn-convert')?.addEventListener('click', async () => {
 
 // ── Data Load & Init ──────────────────────────────────────────────
 async function loadData() {
-  const [s, r, b] = await Promise.all([api.get('/settings'), api.get('/rooms'), api.get('/bookings')]);
-  Object.assign(app.settings, s); app.rooms = r; app.bookings = b;
+  const [s, r, b, pr] = await Promise.all([api.get('/settings'), api.get('/rooms'), api.get('/bookings'), api.get('/promos')]);
+  Object.assign(app.settings, s); app.rooms = r; app.bookings = b; app.promos = pr;
 }
 async function initApp() {
   if (!token) { showLogin(); return; }
@@ -570,7 +613,9 @@ function printInvoice() {
   const nights = Math.max(1, Math.round((new Date(b.checkout) - new Date(b.checkin)) / 86400000));
   const roomAmt = nights * (b.rate || 0);
   const taxAmt = Math.round((roomAmt + (b.cleaningFee || 0)) * ((b.tax || 0) / 100));
-  const grand = roomAmt + (b.cleaningFee || 0) + (b.deposit || 0) + taxAmt;
+  const promo = b.promoId ? (app.promos||[]).find(p => p.id === b.promoId) : null;
+  const discountAmt = calcPromoDiscount(promo, roomAmt);
+  const grand = roomAmt + (b.cleaningFee || 0) + (b.deposit || 0) + taxAmt - discountAmt;
   const fmtMoney = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
   const fmtDate = d => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
   const todayStr = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'})).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
@@ -599,6 +644,7 @@ function printInvoice() {
     + ((b.cleaningFee||0)>0 ? '<tr><td>Cleaning Fee</td><td>1</td><td>-</td><td>'+fmtMoney(b.cleaningFee)+'</td></tr>' : '')
     + ((b.deposit||0)>0 ? '<tr><td>Deposit</td><td>1</td><td>-</td><td>'+fmtMoney(b.deposit)+'</td></tr>' : '')
     + ((b.tax||0)>0 ? '<tr><td>Tax ('+b.tax+'%)</td><td>-</td><td>-</td><td>'+fmtMoney(taxAmt)+'</td></tr>' : '')
+    + (discountAmt > 0 ? `<tr style="color:#16a34a"><td>Promo: ${promo.name}</td><td>-</td><td>-</td><td>-${fmtMoney(discountAmt)}</td></tr>` : '')
     + '<tr class="tt"><td colspan="3"><b>Total Amount</b></td><td><b>'+fmtMoney(grand)+'</b></td></tr>'
     + '</tbody></table>'
     + (b.notes ? '<div class="nb"><b>Notes / Special Requests:</b> '+b.notes+'</div>' : '')
@@ -614,3 +660,95 @@ function printInvoice() {
   win.document.close();
 }
 window.printInvoice = printInvoice;
+
+// ── Promo CRUD ────────────────────────────────────────────────────
+function renderPromos() {
+  const list = $('promos-list'); if (!list) return;
+  if (!app.promos.length) {
+    list.innerHTML = '<div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div>'; return;
+  }
+  const badge = s => {
+    const cfg = { ongoing:{cls:'promo-badge-ongoing',lbl:'🟢 Ongoing'}, scheduled:{cls:'promo-badge-scheduled',lbl:'🔵 Scheduled'}, inactive:{cls:'promo-badge-inactive',lbl:'⚫ Inactive'} }[s] || {cls:'',lbl:s};
+    return `<span class="promo-badge ${cfg.cls}">${cfg.lbl}</span>`;
+  };
+  list.innerHTML = `<div class="promo-table-wrap"><table class="promo-table">
+    <thead><tr><th>Description</th><th>Room</th><th>Discount</th><th>Period</th><th>Status</th><th></th></tr></thead>
+    <tbody>${app.promos.map(p => {
+      const st = promoStatus(p);
+      const disc = p.type === 'percentage' ? `-${p.value}%` : `-${idr(p.value)}`;
+      const room = p.roomId === 'all' ? 'All Rooms' : getRoomName(p.roomId);
+      const period = p.startDate && p.endDate ? `${shortDate(p.startDate)} → ${shortDate(p.endDate)}` : '—';
+      return `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${room}</td>
+        <td style="color:#16a34a;font-weight:700;">${disc}</td>
+        <td style="font-size:12px;">${period}</td>
+        <td>${badge(st)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePromo('${p.id}')">Del</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+window.openEditPromo = function(id) {
+  const p = app.promos.find(x => x.id === id); if (!p) return;
+  $('promo-modal-title').textContent = 'Edit Promo'; $('promo-edit-id').value = id;
+  $('promo-name').value = p.name; $('promo-type').value = p.type;
+  $('promo-value').value = p.value;
+  $('promo-start').value = p.startDate||''; $('promo-end').value = p.endDate||'';
+  populatePromoRoomSelect(); $('promo-room').value = p.roomId || 'all';
+  document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === p.type));
+  $('promo-value-label').textContent = p.type === 'percentage' ? 'DISCOUNT (%)' : 'DISCOUNT AMOUNT (RP)';
+  updatePromoStatusPreview();
+  $('promo-modal').classList.add('active');
+};
+window.deletePromo = async function(id) {
+  if (!confirm('Delete this promo?')) return;
+  try { await api.del(`/promos/${id}`); showToast('Promo deleted.'); await loadData(); renderPromos(); populatePromoSelect($('form-room')?.value||''); }
+  catch (e) { showToast('Delete failed: ' + e.message); }
+};
+
+function populatePromoRoomSelect() {
+  const sel = $('promo-room'); if (!sel) return;
+  sel.innerHTML = '<option value="all">All Rooms</option>';
+  app.rooms.forEach(r => { sel.innerHTML += `<option value="${r.id}">${r.name}</option>`; });
+}
+function updatePromoStatusPreview() {
+  const start = $('promo-start')?.value, end = $('promo-end')?.value;
+  const el = $('promo-status-preview'); if (!el) return;
+  if (!start || !end) { el.style.display = 'none'; return; }
+  const st = promoStatus({ startDate: start, endDate: end });
+  const cfg = { ongoing:{bg:'#dcfce7',color:'#166534',text:'🟢 Status: Ongoing'}, scheduled:{bg:'#dbeafe',color:'#1e40af',text:'🔵 Status: Scheduled'}, inactive:{bg:'#f3f4f6',color:'#374151',text:'⚫ Status: Inactive'} }[st];
+  el.style.display = ''; el.style.background = cfg.bg; el.style.color = cfg.color; el.textContent = cfg.text;
+}
+
+$('btn-add-promo')?.addEventListener('click', () => {
+  $('promo-modal-title').textContent = 'Add Promo'; $('promo-form').reset(); $('promo-edit-id').value = '';
+  $('promo-type').value = 'percentage'; $('promo-value-label').textContent = 'DISCOUNT (%)';
+  document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'percentage'));
+  populatePromoRoomSelect(); $('promo-status-preview').style.display = 'none';
+  $('promo-modal').classList.add('active');
+});
+document.querySelectorAll('.promo-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const type = btn.dataset.type;
+    $('promo-type').value = type;
+    document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+    $('promo-value-label').textContent = type === 'percentage' ? 'DISCOUNT (%)' : 'DISCOUNT AMOUNT (RP)';
+  });
+});
+['promo-start','promo-end'].forEach(id => $(id)?.addEventListener('change', updatePromoStatusPreview));
+$('promo-form')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = { name:$('promo-name').value, type:$('promo-type').value, value:+$('promo-value').value, roomId:$('promo-room').value, startDate:$('promo-start').value, endDate:$('promo-end').value };
+  const eid = $('promo-edit-id').value;
+  try {
+    if (eid) { await api.put(`/promos/${eid}`, data); showToast('Promo updated! ✅'); }
+    else { await api.post('/promos', data); showToast('Promo created! ✅'); }
+    $('promo-modal').classList.remove('active'); await loadData(); renderPromos(); populatePromoSelect($('form-room')?.value||'');
+  } catch (e) { showToast('Save failed: ' + e.message); }
+});
+['btn-close-promo-modal','btn-cancel-promo'].forEach(id => $(id)?.addEventListener('click', () => $('promo-modal').classList.remove('active')));

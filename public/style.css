@@ -619,3 +619,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     .reports-stat-cards{grid-template-columns:1fr;}
     .ipm-stay-grid{grid-template-columns:1fr;}
 }
+
+/* ── Promo System ─────────────────────────────────────────────────── */
+.promo-empty { text-align:center; padding:28px; color:var(--text-light); font-size:13px; }
+.promo-table-wrap { overflow-x:auto; }
+.promo-table { width:100%; border-collapse:collapse; font-size:13px; }
+.promo-table thead tr { background:var(--primary-dark,#1a1a2e); }
+.promo-table thead th { padding:10px 14px; font-size:11px; font-weight:600; color:#fff; text-align:left; text-transform:uppercase; letter-spacing:.5px; }
+.promo-table tbody td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.promo-table tbody tr:hover { background:#fafafa; }
+
+/* Promo status badges */
+.promo-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.promo-badge-ongoing  { background:#dcfce7; color:#166534; }
+.promo-badge-scheduled{ background:#dbeafe; color:#1e40af; }
+.promo-badge-inactive { background:#f3f4f6; color:#6b7280; }
+
+/* Promo type toggle in modal */
+.promo-type-toggle { display:flex; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; }
+.promo-type-btn { flex:1; padding:8px 12px; border:none; background:#fff; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-light); transition:all .15s; }
+.promo-type-btn.active { background:var(--primary); color:#fff; font-weight:600; }
+.promo-type-btn:hover:not(.active) { background:#f9fafb; }

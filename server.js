@@ -39,11 +39,18 @@ async function initDB() {
       cleaning_fee REAL DEFAULT 0, deposit REAL DEFAULT 0, tax REAL DEFAULT 0,
       status TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS promos (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT DEFAULT 'percentage',
+      value REAL DEFAULT 0, room_id TEXT DEFAULT 'all',
+      start_date TEXT, end_date TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
   await seedData();
 }
 
 async function seedData() {
+  // Migration: add promo_id to bookings (safe – silently ignored if column already exists)
+  await db.execute('ALTER TABLE bookings ADD COLUMN promo_id TEXT').catch(() => {});
   // Migration: rename 'admin' to 'terratjo' if it exists
   const { rows: adminRows } = await db.execute({ sql:'SELECT id FROM users WHERE username = ?', args:['admin'] });
   if (adminRows.length > 0) {
@@ -218,44 +225,80 @@ app.delete('/api/rooms/:id', auth, async (req, res) => {
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 
+// ── Promos ────────────────────────────────────────────────────────
+app.get('/api/promos', auth, async (req, res) => {
+  const { rows } = await db.execute('SELECT * FROM promos ORDER BY created_at DESC');
+  const today = new Date().toISOString().slice(0,10);
+  res.json(rows.map(p => {
+    let status = 'inactive';
+    if (p.start_date && p.end_date) {
+      if (today < p.start_date) status = 'scheduled';
+      else if (today <= p.end_date) status = 'ongoing';
+    }
+    return { id:p.id, name:p.name, type:p.type, value:Number(p.value), roomId:p.room_id, startDate:p.start_date, endDate:p.end_date, status, createdAt:p.created_at };
+  }));
+});
+app.post('/api/promos', auth, async (req, res) => {
+  const { name, type, value, roomId, startDate, endDate } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  const id = `PR-${String(Date.now()).slice(-6)}`;
+  await db.execute({ sql:'INSERT INTO promos (id,name,type,value,room_id,start_date,end_date) VALUES (?,?,?,?,?,?,?)',
+    args:[id,name,type||'percentage',Number(value)||0,roomId||'all',startDate||null,endDate||null] });
+  broadcast({ type:'sync', target:'all' }); res.status(201).json({ success:true, id });
+});
+app.put('/api/promos/:id', auth, async (req, res) => {
+  const { name, type, value, roomId, startDate, endDate } = req.body;
+  const r = await db.execute({ sql:'UPDATE promos SET name=?,type=?,value=?,room_id=?,start_date=?,end_date=? WHERE id=?',
+    args:[name,type||'percentage',Number(value)||0,roomId||'all',startDate||null,endDate||null,req.params.id] });
+  if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  broadcast({ type:'sync', target:'all' }); res.json({ success:true });
+});
+app.delete('/api/promos/:id', auth, async (req, res) => {
+  await db.execute({ sql:'DELETE FROM promos WHERE id=?', args:[req.params.id] });
+  broadcast({ type:'sync', target:'all' }); res.json({ success:true });
+});
+
 // ── Bookings ──────────────────────────────────────────────────────
 const mapBooking = row => ({
   id:row.id, type:row.type, guestName:row.guest_name, guestEmail:row.guest_email,
   phone:row.phone, address:row.address, numGuests:Number(row.num_guests), room:row.room_id,
   checkin:row.checkin, checkout:row.checkout, checkinTime:row.checkin_time,
   checkoutTime:row.checkout_time, rate:Number(row.rate), cleaningFee:Number(row.cleaning_fee),
-  deposit:Number(row.deposit), tax:Number(row.tax), status:row.status, notes:row.notes, createdAt:row.created_at
+  deposit:Number(row.deposit), tax:Number(row.tax), status:row.status, notes:row.notes,
+  promoId:row.promo_id||null, createdAt:row.created_at
 });
 app.get('/api/bookings', auth, async (req, res) => {
   const { rows } = await db.execute('SELECT * FROM bookings ORDER BY checkin DESC'); res.json(rows.map(mapBooking));
 });
 app.post('/api/bookings', auth, async (req, res) => {
   const { id,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
-          checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes } = req.body;
+          checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,promoId } = req.body;
   const idGen = id || `BK-${String(Date.now()).slice(-6)}`;
-    const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
-    const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
-    try {
-      await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,deposit,tax,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes] });
-      // Only sync to Google Sheets when booking is confirmed
-      if (status === 'confirmed') {
-        syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
-      }
-      broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
-    } catch (e) { res.status(400).json({ error: e.message }); }
+  const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
+  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
+  try {
+    await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,deposit,tax,status,notes,promo_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,promoId||null] });
+    if (status === 'confirmed') {
+      let promoLabel = '';
+      if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
+      syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel});
+    }
+    broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/bookings/:id', auth, async (req, res) => {
   const { type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
-          checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes } = req.body;
+          checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,promoId } = req.body;
   const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
   const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(deposit)||0);
-  const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,deposit=?,tax=?,status=?,notes=? WHERE id=?`,
-    args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,req.params.id] });
+  const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,deposit=?,tax=?,status=?,notes=?,promo_id=? WHERE id=?`,
+    args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,deposit,tax,status,notes,promoId||null,req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
-  // Only sync to Google Sheets when status becomes confirmed
   if (status === 'confirmed') {
-    syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes});
+    let promoLabel = '';
+    if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
+    syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel});
   }
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
