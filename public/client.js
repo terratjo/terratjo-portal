@@ -329,17 +329,24 @@ $('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth <
 $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
 
 // ── Tables ───────────────────────────────────────────────────────
-// ── Quotation countdown helper (6h from createdAt) ──────────────
-function quotaCountdown(b) {
-  if (b.status !== 'quotation' || effStatus(b) === 'expired' || !b.createdAt) return '';
-  const expiry = new Date(b.createdAt).getTime() + 6 * 60 * 60 * 1000;
+// ── Quotation status cell: countdown OR badge ───────────────────
+// Returns the full HTML for the STATUS cell of a booking row.
+// Active quotations → live countdown (orange). Others → normal badge.
+function quotaStatusCell(b) {
+  const es = effStatus(b);
+  if (b.status !== 'quotation') return statusBadge(es); // non-quotation: normal badge
+  if (es === 'expired') return statusBadge('expired');  // expired quotation: expired badge
+  if (!b.createdAt) return statusBadge('quotation');
+  // Fix: SQLite stores UTC as "YYYY-MM-DD HH:MM:SS" — must add Z so browser parses as UTC not local
+  const utcStr = b.createdAt.includes('T') ? b.createdAt : b.createdAt.replace(' ', 'T') + 'Z';
+  const expiry = new Date(utcStr).getTime() + 6 * 60 * 60 * 1000;
   const rem = expiry - Date.now();
-  if (rem <= 0) return '<div class="quota-cd quota-cd-exp">Expired</div>';
+  if (rem <= 0) return statusBadge('expired');
   const h = Math.floor(rem / 3600000);
   const m = Math.floor((rem % 3600000) / 60000);
   const s = Math.floor((rem % 60000) / 1000);
   const urgent = rem < 30 * 60 * 1000;
-  return `<div class="quota-cd${urgent?' quota-cd-urgent':''}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
+  return `<div class="quota-cd${urgent ? ' quota-cd-urgent' : ''}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
 }
 
 let _currentBookingFilter = 'all', _currentInvoiceFilter = 'all';
@@ -352,14 +359,15 @@ function renderBookings(filter) {
     if (filter === 'all') return true;
     if (filter === 'cancelled') return b.status === 'cancelled' || es === 'expired';
     if (filter === 'quotation') return b.status === 'quotation' && es !== 'expired';
+    // Awaiting Payment = awaiting invoices + active quotations (all quotations need payment)
+    if (filter === 'awaiting') return b.status === 'awaiting' || (b.status === 'quotation' && es !== 'expired');
     return b.status === filter;
   });
   tb.innerHTML = '';
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    const cd = quotaCountdown(b);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}${cd}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
@@ -377,8 +385,7 @@ function renderInvoices(filter) {
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
     const es = effStatus(b);
-    const cd = quotaCountdown(b);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(es)}${cd}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
