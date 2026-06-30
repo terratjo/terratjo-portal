@@ -179,13 +179,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Pre-fetch logo for login modal (public endpoint, no auth needed)
+  // ── Logo: apply cached instantly → fetch fresh → cache for next load ──
+  const _logoImg = document.getElementById('login-logo-img');
+  const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
+  if (_cachedLogo && _logoImg) {
+    _logoImg.src = _cachedLogo; // instant — no flash
+  } else if (_logoImg) {
+    _logoImg.style.opacity = '0'; // hide wrong static logo until correct one loads
+  }
   fetch('/api/logo').then(r => r.json()).then(d => {
     if (d.logo) {
-      const el = document.getElementById('login-logo-img');
-      if (el) el.src = d.logo;
-    }
-  }).catch(() => {});
+      localStorage.setItem('terratjo_logo_cache', d.logo);
+      if (_logoImg) { _logoImg.src = d.logo; _logoImg.style.opacity = '1'; }
+    } else if (_logoImg) { _logoImg.style.opacity = '1'; }
+  }).catch(() => { if (_logoImg) _logoImg.style.opacity = '1'; });
 
   if (token) initApp(); else showLogin();
 });
@@ -322,7 +329,23 @@ $('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth <
 $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
 
 // ── Tables ───────────────────────────────────────────────────────
+// ── Quotation countdown helper (6h from createdAt) ──────────────
+function quotaCountdown(b) {
+  if (b.status !== 'quotation' || effStatus(b) === 'expired' || !b.createdAt) return '';
+  const expiry = new Date(b.createdAt).getTime() + 6 * 60 * 60 * 1000;
+  const rem = expiry - Date.now();
+  if (rem <= 0) return '<div class="quota-cd quota-cd-exp">Expired</div>';
+  const h = Math.floor(rem / 3600000);
+  const m = Math.floor((rem % 3600000) / 60000);
+  const s = Math.floor((rem % 60000) / 1000);
+  const urgent = rem < 30 * 60 * 1000;
+  return `<div class="quota-cd${urgent?' quota-cd-urgent':''}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
+}
+
+let _currentBookingFilter = 'all', _currentInvoiceFilter = 'all';
+
 function renderBookings(filter) {
+  _currentBookingFilter = filter || 'all';
   const tb = $('bookings-tbody'); if (!tb) return;
   const rows = app.bookings.filter(b => {
     const es = effStatus(b);
@@ -335,14 +358,15 @@ function renderBookings(filter) {
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
+    const cd = quotaCountdown(b);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}${cd}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">View</button></td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
 
 function renderInvoices(filter) {
+  _currentInvoiceFilter = filter || 'all';
   const tb = $('invoices-tbody'); if (!tb) return;
-  // Invoices page shows all non-cancelled docs; expired quotations stay visible
   const rows = app.bookings
     .filter(b => b.status !== 'cancelled')
     .filter(b => filter === 'all'
@@ -353,10 +377,29 @@ function renderInvoices(filter) {
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
     const es = effStatus(b);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(es)}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
+    const cd = quotaCountdown(b);
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td>${n}n</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${statusBadge(es)}${cd}</td><td><button class="btn btn-primary btn-sm" onclick="openIPM('${b.id}')">Preview</button></td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
+
+// ── Live countdown ticker (runs every second) ─────────────────────
+setInterval(() => {
+  let needsReload = false;
+  document.querySelectorAll('.quota-cd[data-expiry]').forEach(el => {
+    const rem = Number(el.dataset.expiry) - Date.now();
+    if (rem <= 0) { el.className = 'quota-cd quota-cd-exp'; el.removeAttribute('data-expiry'); el.textContent = 'Expired'; needsReload = true; return; }
+    const h = Math.floor(rem / 3600000);
+    const m = Math.floor((rem % 3600000) / 60000);
+    const s = Math.floor((rem % 60000) / 1000);
+    const urgent = rem < 30 * 60 * 1000;
+    el.className = `quota-cd${urgent ? ' quota-cd-urgent' : ''}`;
+    el.textContent = `⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  });
+  if (needsReload) {
+    loadData().then(() => { renderBookings(_currentBookingFilter); renderInvoices(_currentInvoiceFilter); });
+  }
+}, 1000);
 
 function renderReports(filter) {
   const confirmed = app.bookings.filter(b => b.status === 'confirmed');
@@ -612,9 +655,11 @@ function applyLogo(dataUrl) {
   ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle'].forEach(id => {
     const el = $(id); if (el) el.innerHTML = imgTag;
   });
-  // Also update login modal logo
+  // Update login modal logo and refresh localStorage cache
   const loginLogoImg = document.getElementById('login-logo-img');
-  if (loginLogoImg) loginLogoImg.src = src;
+  if (loginLogoImg) { loginLogoImg.src = src; loginLogoImg.style.opacity = '1'; }
+  if (dataUrl) localStorage.setItem('terratjo_logo_cache', dataUrl);
+  else localStorage.removeItem('terratjo_logo_cache');
 
   const removeBtn = $('btn-remove-logo');
   if (removeBtn) removeBtn.style.display = dataUrl ? 'inline-flex' : 'none';
