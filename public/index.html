@@ -28,21 +28,29 @@
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <h3>BOOKINGS</h3>
-                <a href="#" class="nav-item active" data-page="calendar"><i data-lucide="calendar"></i> Calendar</a>
-                <a href="#" class="nav-item" data-page="all-bookings"><i data-lucide="list"></i> All Bookings</a>
+                <a href="#" class="nav-item active" data-page="calendar"><i data-lucide="calendar"></i> <span data-i18n="nav.calendar">Calendar</span></a>
+                <a href="#" class="nav-item" data-page="all-bookings"><i data-lucide="list"></i> <span data-i18n="nav.bookings">All Bookings</span></a>
             </div>
             <div class="nav-section">
                 <h3>DOCUMENTS</h3>
-                <a href="#" class="nav-item" data-page="invoices"><i data-lucide="file-text"></i> Invoices &amp; Quotes</a>
+                <h3 data-i18n="nav.header.documents">DOCUMENTS</h3>
+                <a href="#" class="nav-item" data-page="invoices"><i data-lucide="file-text"></i> <span data-i18n="nav.invoices">Invoices &amp; Quotes</span></a>
             </div>
             <div class="nav-section">
-                <h3>ANALYTICS</h3>
-                <a href="#" class="nav-item" data-page="reports"><i data-lucide="bar-chart-2"></i> Reports</a>
+                <h3 data-i18n="nav.header.analytics">ANALYTICS</h3>
+                <a href="#" class="nav-item" data-page="reports"><i data-lucide="bar-chart-2"></i> <span data-i18n="nav.reports">Reports</span></a>
             </div>
             <div class="nav-section">
-                <h3>PROPERTY</h3>
-                <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> Inventory</a>
-                <a href="#" class="nav-item" data-page="settings"><i data-lucide="settings"></i> Settings</a>
+                <h3 data-i18n="nav.header.property">PROPERTY</h3>
+                <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> <span data-i18n="nav.inventory">Inventory</span></a>
+                <a href="#" class="nav-item" data-page="settings"><i data-lucide="settings"></i> <span data-i18n="nav.settings">Settings</span></a>
+            </div>
+            <div class="nav-section">
+                <h3 data-i18n="nav.header.language">LANGUAGE</h3>
+                <div class="lang-selector">
+                    <button class="lang-btn" onclick="setLanguage('en')">EN</button>
+                    <button class="lang-btn" onclick="setLanguage('id')">ID</button>
+                </div>
             </div>
         </nav>
         <div class="sidebar-footer">
@@ -64,8 +72,8 @@
                 <span class="location-badge mobile-hide" id="topbar-location">Taman Melati Apt - Yogyakarta</span>
             </div>
             <div class="top-bar-right">
-                <button class="btn btn-primary" id="btn-new-booking"><i data-lucide="calendar-plus"></i> New Booking</button>
-                <button class="btn btn-secondary" id="btn-new-quotation"><i data-lucide="file-plus"></i> New Quotation</button>
+                <button class="btn btn-primary" id="btn-new-booking"><i data-lucide="calendar-plus"></i> <span data-i18n="btn.new-booking">New Booking</span></button>
+                <button class="btn btn-secondary" id="btn-new-quotation"><i data-lucide="file-plus"></i> <span data-i18n="btn.new-quotation">New Quotation</span></button>
             </div>
         </header>
 
@@ -190,8 +198,8 @@
         <!-- PAGE: SETTINGS -->
         <main class="page-content hidden" id="page-settings">
             <div class="section-container settings-container">
-                <h2 class="section-title">Property Settings</h2>
-                <p class="section-subtitle">These details will appear on all invoices and quotations.</p>
+                <h2 class="section-title" data-i18n="settings.title">Property Settings</h2>
+                <p class="section-subtitle" data-i18n="settings.subtitle">These details will appear on all invoices and quotations.</p>
                 <div class="settings-card">
                     <div class="settings-form">
                         <!-- Logo Upload -->
@@ -257,7 +265,7 @@
                             <textarea id="setting-notes" rows="3">Thank you for choosing Terratjo Room at Taman Melati Apartment Yogyakarta</textarea>
                         </div>
                         <div class="form-actions">
-                            <button class="btn btn-primary" id="btn-save-settings"><i data-lucide="save"></i> Save Settings</button>
+                            <button class="btn btn-primary" id="btn-save-settings"><i data-lucide="save"></i> <span data-i18n="settings.save">Save Settings</span></button>
                         </div>
                     </div>
                     <div class="settings-preview-box">
@@ -278,26 +286,26 @@
             </div>
 
             <!-- Security Card -->
-            <div style="max-width:900px;margin-top:20px;">
+            <div style="max-width:900px;margin:20px auto 0;">
                 <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:28px;box-shadow:var(--shadow-sm);">
-                    <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px;">🔐 Security</h3>
-                    <p style="color:var(--text-light);font-size:13px;margin-bottom:20px;">Change your login password. Use a strong password with letters, numbers and symbols.</p>
+                    <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px;" data-i18n="sec.title">🔐 Security</h3>
+                    <p style="color:var(--text-light);font-size:13px;margin-bottom:20px;" data-i18n="sec.subtitle">Change your login password. Use a strong password with letters, numbers and symbols.</p>
                     <div class="form-group">
-                        <label>Current Password</label>
+                        <label data-i18n="sec.current">Current Password</label>
                         <input type="password" id="pw-current" placeholder="Enter your current password" autocomplete="current-password">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>New Password</label>
+                            <label data-i18n="sec.new">New Password</label>
                             <input type="password" id="pw-new" placeholder="Min. 6 characters" autocomplete="new-password">
                         </div>
                         <div class="form-group">
-                            <label>Confirm New Password</label>
+                            <label data-i18n="sec.confirm">Confirm New Password</label>
                             <input type="password" id="pw-confirm" placeholder="Repeat new password" autocomplete="new-password">
                         </div>
                     </div>
                     <div class="form-actions">
-                        <button class="btn btn-primary" id="btn-change-password"><i data-lucide="lock"></i> Change Password</button>
+                        <button class="btn btn-primary" id="btn-change-password"><i data-lucide="lock"></i> <span data-i18n="sec.btn">Change Password</span></button>
                     </div>
                 </div>
             </div>
@@ -307,10 +315,10 @@
                 <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:28px;box-shadow:var(--shadow-sm);">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
                         <div>
-                            <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px;">&#127881; Promo Management</h3>
-                            <p style="color:var(--text-light);font-size:13px;">Set discounts by room and period. Staff selects promos when creating bookings.</p>
+                            <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px;" data-i18n="promo.title">&#127881; Promo Management</h3>
+                            <p style="color:var(--text-light);font-size:13px;" data-i18n="promo.subtitle">Set discounts by room and period. Staff selects promos when creating bookings.</p>
                         </div>
-                        <button class="btn btn-primary btn-sm" id="btn-add-promo" style="white-space:nowrap;"><i data-lucide="plus"></i> Add Promo</button>
+                        <button class="btn btn-primary btn-sm" id="btn-add-promo" style="white-space:nowrap;"><i data-lucide="plus"></i> <span data-i18n="promo.add">Add Promo</span></button>
                     </div>
                     <div id="promos-list"><div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div></div>
                 </div>
@@ -319,6 +327,13 @@
 
 
     </div><!-- end page-wrapper -->
+
+    <!-- Language Toggle -->
+    <div class="lang-toggle" id="lang-toggle">
+        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="id" onclick="setLanguage('id')">ID</button>
+    </div>
+
 </div><!-- end app-container -->
 
 <!-- ===== MODALS ===== -->
@@ -329,11 +344,11 @@
         <div class="login-modal-brand">
             <div class="login-logo"><img src="/logo.png" alt="Terratjo" style="width:100%;height:100%;object-fit:contain;"></div>
             <h2>Terratjo Room</h2>
-            <p>Booking Portal — Staff Access</p>
+            <p data-i18n="login.subtitle">Booking Portal — Staff Access</p>
         </div>
         <form id="login-form" class="modal-body">
-            <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="Enter username" required autocomplete="username"></div>
-            <div class="form-group"><label>Password</label>
+            <div class="form-group"><label data-i18n="login.username">USERNAME</label><input type="text" id="login-user" placeholder="Enter username" required autocomplete="username"></div>
+            <div class="form-group"><label data-i18n="login.password">PASSWORD</label>
                 <div class="password-field-wrapper">
                     <input type="password" id="login-pass" placeholder="Enter password" required autocomplete="current-password">
                     <button type="button" class="password-toggle" id="password-toggle" aria-label="Show password" tabindex="-1">
@@ -349,7 +364,7 @@
                 </div>
             </div>
             <div class="form-actions" style="margin-top:8px;">
-                <button type="button" id="btn-login-submit" class="btn btn-primary full-width">Sign In <i data-lucide="arrow-right"></i></button>
+                <button type="button" id="btn-login-submit" class="btn btn-primary full-width"><span data-i18n="login.signin">Sign In</span> <i data-lucide="arrow-right"></i></button>
             </div>
         </form>
     </div>
@@ -366,30 +381,30 @@
             <form id="booking-form" autocomplete="off">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>GUEST FULL NAME</label>
+                        <label data-i18n="form.name">GUEST FULL NAME</label>
                         <input type="text" id="form-name" placeholder="e.g. Maria Santos" required>
                     </div>
                     <div class="form-group">
-                        <label>EMAIL</label>
+                        <label data-i18n="form.email">EMAIL</label>
                         <input type="email" id="form-email" placeholder="guest@email.com">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>PHONE / WHATSAPP</label>
+                        <label data-i18n="form.phone">PHONE / WHATSAPP</label>
                         <input type="text" id="form-phone" placeholder="+62 …">
                     </div>
                     <div class="form-group">
-                        <label>NO. OF GUESTS</label>
+                        <label data-i18n="form.guests">NO. OF GUESTS</label>
                         <input type="number" id="form-guests" value="1" min="1">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>GUEST ADDRESS</label>
+                    <label data-i18n="form.address">GUEST ADDRESS</label>
                     <input type="text" id="form-address" placeholder="Street, City, Country">
                 </div>
                 <div class="form-group">
-                    <label>ROOM</label>
+                    <label data-i18n="form.room">ROOM</label>
                     <select id="form-room"></select>
                 </div>
                 <div class="form-group" id="promo-select-group" style="display:none;">
@@ -400,59 +415,59 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>CHECK-IN DATE</label>
+                        <label data-i18n="form.checkin-date">CHECK-IN DATE</label>
                         <input type="date" id="form-checkin" required>
                     </div>
                     <div class="form-group">
-                        <label>CHECK-IN TIME</label>
+                        <label data-i18n="form.checkin-time">CHECK-IN TIME</label>
                         <input type="time" id="form-checkin-time" value="14:00">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>CHECK-OUT DATE</label>
+                        <label data-i18n="form.checkout-date">CHECK-OUT DATE</label>
                         <input type="date" id="form-checkout" required>
                     </div>
                     <div class="form-group">
-                        <label>CHECK-OUT TIME</label>
+                        <label data-i18n="form.checkout-time">CHECK-OUT TIME</label>
                         <input type="time" id="form-checkout-time" value="12:00">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>RATE / NIGHT (RP)</label>
+                        <label data-i18n="form.rate">RATE / NIGHT (RP)</label>
                         <input type="number" id="form-price" value="310000" required>
                     </div>
                     <div class="form-group">
-                        <label>CLEANING FEE (RP)</label>
+                        <label data-i18n="form.cleaning">CLEANING FEE (RP)</label>
                         <input type="number" id="form-cleaning" value="0">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>DEPOSIT (RP)</label>
+                        <label data-i18n="form.deposit">DEPOSIT (RP)</label>
                         <input type="number" id="form-deposit" value="0">
                     </div>
                     <div class="form-group">
-                        <label>TAX (%)</label>
+                        <label data-i18n="form.tax">TAX (%)</label>
                         <input type="number" id="form-tax" value="0" min="0" max="100">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>NOTES / SPECIAL REQUESTS</label>
+                    <label data-i18n="form.notes">NOTES / SPECIAL REQUESTS</label>
                     <textarea id="form-notes" rows="2" placeholder="Any special requests…"></textarea>
                 </div>
 
                 <!-- Live Summary -->
                 <div class="form-summary" id="form-summary">
-                    <div class="form-summary-row"><span>Rate per night</span><span id="fs-rate">Rp 310,000</span></div>
-                    <div class="form-summary-row"><span id="fs-nights-label">1 night</span><span id="fs-nights-count">1</span></div>
-                    <div class="form-summary-row"><span>Accommodation</span><span id="fs-accommodation">Rp 310,000</span></div>
-                    <div class="form-summary-row"><span>Cleaning fee</span><span id="fs-cleaning">—</span></div>
-                    <div class="form-summary-row"><span>Deposit</span><span id="fs-deposit">—</span></div>
-                    <div class="form-summary-row"><span>Tax</span><span id="fs-tax">—</span></div>
+                    <div class="form-summary-row"><span data-i18n="fs.rate">Rate per night</span><span id="fs-rate">Rp 310,000</span></div>
+                    <div class="form-summary-row"><span id="fs-nights-label">1 <span data-i18n="fs.night">night</span></span><span id="fs-nights-count">1</span></div>
+                    <div class="form-summary-row"><span data-i18n="fs.accommodation">Accommodation</span><span id="fs-accommodation">Rp 310,000</span></div>
+                    <div class="form-summary-row"><span data-i18n="fs.cleaning">Cleaning fee</span><span id="fs-cleaning">—</span></div>
+                    <div class="form-summary-row"><span data-i18n="fs.deposit">Deposit</span><span id="fs-deposit">—</span></div>
+                    <div class="form-summary-row"><span data-i18n="fs.tax">Tax</span><span id="fs-tax">—</span></div>
                     <div class="form-summary-row" id="fs-promo-row" style="display:none;color:#16a34a;font-weight:600;"><span id="fs-promo-label">Promo Discount</span><span id="fs-promo">—</span></div>
-                    <div class="form-summary-total"><span>Total</span><span id="fs-total">Rp 310,000</span></div>
+                    <div class="form-summary-total"><span data-i18n="fs.total">Total</span><span id="fs-total">Rp 310,000</span></div>
                 </div>
 
                 <div class="form-actions form-actions-three">

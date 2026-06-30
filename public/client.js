@@ -6,6 +6,76 @@ let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', l
 const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
 let calYear = today.getFullYear(), calMonth = today.getMonth();
 
+// ── i18n (Language) ─────────────────────────────────────────────
+const LANG = {
+  en: {
+    'nav.calendar':'Calendar','nav.bookings':'All Bookings','nav.invoices':'Invoices & Quotes',
+    'nav.reports':'Reports','nav.inventory':'Inventory','nav.settings':'Settings',
+    'nav.header.documents':'DOCUMENTS','nav.header.analytics':'ANALYTICS',
+    'nav.header.property':'PROPERTY','nav.header.language':'LANGUAGE',
+    'btn.new-booking':'New Booking','btn.new-quotation':'New Quotation','btn.cancel':'Cancel',
+    'login.username':'USERNAME','login.password':'PASSWORD','login.signin':'Sign In',
+    'login.subtitle':'Booking Portal \u2014 Staff Access',
+    'settings.title':'Property Settings',
+    'settings.subtitle':'These details will appear on all invoices and quotations.',
+    'settings.save':'Save Settings',
+    'sec.title':'\uD83D\uDD10 Security','sec.subtitle':'Change your login password. Use a strong password with letters, numbers and symbols.',
+    'sec.current':'Current Password','sec.new':'New Password','sec.confirm':'Confirm New Password','sec.btn':'Change Password',
+    'promo.title':'\uD83C\uDF89 Promo Management',
+    'promo.subtitle':'Set discounts by room and period. Staff selects promos when creating bookings.',
+    'promo.add':'Add Promo',
+    'form.name':'GUEST FULL NAME','form.email':'EMAIL','form.phone':'PHONE / WHATSAPP',
+    'form.guests':'NO. OF GUESTS','form.address':'GUEST ADDRESS','form.room':'ROOM',
+    'form.checkin-date':'CHECK-IN DATE','form.checkin-time':'CHECK-IN TIME',
+    'form.checkout-date':'CHECK-OUT DATE','form.checkout-time':'CHECK-OUT TIME',
+    'form.rate':'RATE / NIGHT (RP)','form.cleaning':'CLEANING FEE (RP)',
+    'form.deposit':'DEPOSIT (RP)','form.tax':'TAX (%)','form.notes':'NOTES / SPECIAL REQUESTS',
+    'fs.rate':'Rate per night','fs.night':'night','fs.accommodation':'Accommodation',
+    'fs.cleaning':'Cleaning fee','fs.deposit':'Deposit','fs.tax':'Tax','fs.total':'Total',
+  },
+  id: {
+    'nav.calendar':'Kalender','nav.bookings':'Semua Pemesanan','nav.invoices':'Faktur & Penawaran',
+    'nav.reports':'Laporan','nav.inventory':'Inventaris','nav.settings':'Pengaturan',
+    'nav.header.documents':'DOKUMEN','nav.header.analytics':'ANALITIK',
+    'nav.header.property':'PROPERTI','nav.header.language':'BAHASA',
+    'btn.new-booking':'Pemesanan Baru','btn.new-quotation':'Penawaran Baru','btn.cancel':'Batal',
+    'login.username':'NAMA PENGGUNA','login.password':'KATA SANDI','login.signin':'Masuk',
+    'login.subtitle':'Portal Pemesanan \u2014 Akses Staf',
+    'settings.title':'Pengaturan Properti',
+    'settings.subtitle':'Detail ini akan muncul di semua faktur dan penawaran.',
+    'settings.save':'Simpan Pengaturan',
+    'sec.title':'\uD83D\uDD10 Keamanan','sec.subtitle':'Ubah kata sandi masuk Anda. Gunakan kata sandi kuat dengan huruf, angka, dan simbol.',
+    'sec.current':'Kata Sandi Saat Ini','sec.new':'Kata Sandi Baru','sec.confirm':'Konfirmasi Kata Sandi Baru','sec.btn':'Ubah Kata Sandi',
+    'promo.title':'\uD83C\uDF89 Manajemen Promo',
+    'promo.subtitle':'Atur diskon berdasarkan kamar dan periode. Staf memilih promo saat membuat pemesanan.',
+    'promo.add':'Tambah Promo',
+    'form.name':'NAMA LENGKAP TAMU','form.email':'EMAIL','form.phone':'TELEPON / WHATSAPP',
+    'form.guests':'JUMLAH TAMU','form.address':'ALAMAT TAMU','form.room':'KAMAR',
+    'form.checkin-date':'TANGGAL CHECK-IN','form.checkin-time':'WAKTU CHECK-IN',
+    'form.checkout-date':'TANGGAL CHECK-OUT','form.checkout-time':'WAKTU CHECK-OUT',
+    'form.rate':'TARIF / MALAM (RP)','form.cleaning':'BIAYA KEBERSIHAN (RP)',
+    'form.deposit':'DEPOSIT (RP)','form.tax':'PAJAK (%)','form.notes':'CATATAN / PERMINTAAN KHUSUS',
+    'fs.rate':'Tarif per malam','fs.night':'malam','fs.accommodation':'Akomodasi',
+    'fs.cleaning':'Biaya kebersihan','fs.deposit':'Deposit','fs.tax':'Pajak','fs.total':'Total',
+  }
+};
+let currentLang = localStorage.getItem('terratjo_lang') || 'en';
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('terratjo_lang', lang);
+  const t = LANG[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+  // Update toggle button active state
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang || btn.textContent.trim() === lang.toUpperCase());
+  });
+}
+window.setLanguage = setLanguage;
+
 // ── Mobile Sidebar ───────────────────────────────────────────────
 function openSidebar() {
   document.querySelector('.sidebar').classList.add('mobile-open');
@@ -61,7 +131,7 @@ function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'bad
 function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">Quotation</span>` : `<span class="badge badge-invoice">Invoice</span>`; }
 
 // ── Auth UI ─────────────────────────────────────────────────────
-function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('active'); }
+function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('active'); setLanguage(currentLang); }
 function logout() { token = null; localStorage.removeItem('terratjo_token'); showLogin(); }
 window.logout = logout;
 
@@ -513,6 +583,7 @@ async function initApp() {
     await loadData();
     lucide.createIcons(); populateRoomSelect(); updateTopBar(); navigate(prevPage);
     applyLogo(app.settings.logo || '');
+    setLanguage(currentLang);
     initSSE();
   } catch (e) { console.error('Init failed:', e); showToast('Failed to load data. Check backend.'); logout(); }
 }

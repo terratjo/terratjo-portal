@@ -690,3 +690,41 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   .login-logo{width:60px;height:60px;}
   .login-modal-brand h2{font-size:18px;}
 }
+
+/* ── Language Toggle ─────────────────────────────────────────────── */
+.lang-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 400;
+  display: flex;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  gap: 2px;
+}
+.lang-btn {
+  padding: 7px 18px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-light);
+  letter-spacing: 0.8px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.lang-btn:hover { color: var(--text-dark); background: var(--bg-light); }
+.lang-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+/* Sidebar language selector */
+.lang-selector { display:flex; gap:6px; padding:4px 0; }
+.lang-selector .lang-btn { padding:5px 14px; border-radius:16px; background:var(--bg-light); color:var(--text-light); }
+.lang-selector .lang-btn.active { background:var(--primary); color:#fff; }
+@media(max-width:768px){
+  .lang-toggle { bottom:70px; right:16px; }
+  .lang-btn { padding:6px 14px; font-size:11px; }
+}
