@@ -135,8 +135,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .badge-quotation::before{background:var(--quotation);}
 .badge-cancelled{background:rgba(220,38,38,.08);color:var(--cancelled);}
 .badge-cancelled::before{background:var(--cancelled);}
-.badge-expired{background:rgba(107,114,128,.1);color:#6b7280;}
-.badge-expired::before{background:#9ca3af;}
+.badge-expired{background:rgba(220,38,38,.12);color:#dc2626;}
+.badge-expired::before{background:#dc2626;}
 .booking-expired{background:rgba(107,114,128,.15);color:#6b7280;}
 .btn-success{background:#16a34a;color:#fff;border-color:#16a34a;}
 .btn-success:hover{background:#15803d;border-color:#15803d;}
@@ -861,15 +861,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   gap: 4px;
   padding: 4px 10px;
   border-radius: 20px;
-  background: rgba(217, 119, 6, 0.1);
-  color: #d97706;
+  background: rgba(37, 99, 235, 0.08);  /* default: subtle blue — > 3h remaining */
+  color: #2563eb;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  border: 1.5px solid rgba(217, 119, 6, 0.3);
+  border: 1.5px solid rgba(37, 99, 235, 0.2);
 }
+/* ≤ 3 hours: orange (matches awaiting-payment badge) */
+.quota-cd-warn {
+  background: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+/* ≤ 30 min: red urgent pulse */
 .quota-cd-urgent {
   background: rgba(220, 38, 38, 0.1);
   color: #dc2626;
@@ -878,9 +885,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 }
 @keyframes quota-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.6; transform: scale(0.97); }
+  50%       { opacity: 0.55; transform: scale(0.97); }
 }
-/* Mobile: allow countdown to wrap in narrow cells */
+/* Mobile: smaller pill */
 @media(max-width:768px) {
   .quota-cd { font-size: 11px; padding: 3px 8px; }
+}
+
+/* ── Reservation source badge ─────────────────────────────────────── */
+.source-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 10.5px; font-weight: 600; background: rgba(124,58,237,.1);
+  color: #7c3aed; border: 1px solid rgba(124,58,237,.2);
+  white-space: nowrap;
 }

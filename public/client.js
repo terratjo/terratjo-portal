@@ -330,14 +330,13 @@ $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth >
 
 // ── Tables ───────────────────────────────────────────────────────
 // ── Quotation status cell: countdown OR badge ───────────────────
-// Returns the full HTML for the STATUS cell of a booking row.
-// Active quotations → live countdown (orange). Others → normal badge.
+// Active quotations → live countdown. Others → normal badge.
 function quotaStatusCell(b) {
   const es = effStatus(b);
-  if (b.status !== 'quotation') return statusBadge(es); // non-quotation: normal badge
-  if (es === 'expired') return statusBadge('expired');  // expired quotation: expired badge
+  if (b.status !== 'quotation') return statusBadge(es);
+  if (es === 'expired') return statusBadge('expired');
   if (!b.createdAt) return statusBadge('quotation');
-  // Fix: SQLite stores UTC as "YYYY-MM-DD HH:MM:SS" — must add Z so browser parses as UTC not local
+  // Fix: SQLite stores UTC as "YYYY-MM-DD HH:MM:SS" — append Z to parse as UTC
   const utcStr = b.createdAt.includes('T') ? b.createdAt : b.createdAt.replace(' ', 'T') + 'Z';
   const expiry = new Date(utcStr).getTime() + 6 * 60 * 60 * 1000;
   const rem = expiry - Date.now();
@@ -345,8 +344,11 @@ function quotaStatusCell(b) {
   const h = Math.floor(rem / 3600000);
   const m = Math.floor((rem % 3600000) / 60000);
   const s = Math.floor((rem % 60000) / 1000);
-  const urgent = rem < 30 * 60 * 1000;
-  return `<div class="quota-cd${urgent ? ' quota-cd-urgent' : ''}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
+  // ≤ 30 min → red urgent; ≤ 3 h → orange warning; > 3h → normal
+  const cls = rem < 30 * 60 * 1000 ? 'quota-cd quota-cd-urgent'
+            : rem < 3 * 3600000    ? 'quota-cd quota-cd-warn'
+            : 'quota-cd';
+  return `<div class="${cls}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
 }
 
 let _currentBookingFilter = 'all', _currentInvoiceFilter = 'all';
@@ -523,6 +525,7 @@ function openForm(type, dateStr, prefillId) {
     $('form-room').value = b.room; $('form-checkin').value = b.checkin; $('form-checkout').value = b.checkout; $('form-checkin-time').value = b.checkinTime||'14:00'; $('form-checkout-time').value = b.checkoutTime||'12:00';
     $('form-price').value = b.rate; $('form-cleaning').value = b.cleaningFee||0; $('form-deposit').value = b.deposit||0; $('form-tax').value = b.tax||0; $('form-notes').value = b.notes||''; $('booking-form').dataset.editId = prefillId;
     populatePromoSelect(b.room); if ($('form-promo')) $('form-promo').value = b.promoId || '';
+    if ($('form-source')) $('form-source').value = b.source || '';
   } else {
     $('form-modal-title').textContent = type==='booking'?'New Booking':'New Quotation';
     $('booking-form').reset(); $('booking-form').dataset.editId = '';
@@ -542,7 +545,7 @@ $('booking-form')?.addEventListener('submit', async e => {
   const ci = $('form-checkin').value, co = $('form-checkout').value;
   if (new Date(co) <= new Date(ci)) { showToast('Check-out must be after check-in.'); return; }
   const editId = $('booking-form').dataset.editId; const isBooking = lastAction === 'booking';
-  const data = { type:isBooking?'invoice':'quotation', guestName:$('form-name').value, guestEmail:$('form-email').value, phone:$('form-phone').value, address:$('form-address').value, numGuests:+$('form-guests').value||1, room:$('form-room').value, checkin:ci, checkout:co, checkinTime:$('form-checkin-time').value||'14:00', checkoutTime:$('form-checkout-time').value||'12:00', rate:+$('form-price').value||310000, cleaningFee:+$('form-cleaning').value||0, deposit:+$('form-deposit').value||0, tax:+$('form-tax').value||0, notes:$('form-notes').value, status:isBooking?'awaiting':'quotation', promoId:$('form-promo')?.value||null };
+  const data = { type:isBooking?'invoice':'quotation', guestName:$('form-name').value, guestEmail:$('form-email').value, phone:$('form-phone').value, address:$('form-address').value, numGuests:+$('form-guests').value||1, room:$('form-room').value, checkin:ci, checkout:co, checkinTime:$('form-checkin-time').value||'14:00', checkoutTime:$('form-checkout-time').value||'12:00', rate:+$('form-price').value||310000, cleaningFee:+$('form-cleaning').value||0, deposit:+$('form-deposit').value||0, tax:+$('form-tax').value||0, notes:$('form-notes').value, status:isBooking?'awaiting':'quotation', promoId:$('form-promo')?.value||null, source:$('form-source')?.value||'' };
   try {
     let res;
     if (editId) { await api.put(`/bookings/${editId}`, data); showToast('Booking updated!'); res = { id: editId }; }
