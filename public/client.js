@@ -378,7 +378,6 @@ function renderInvoices(filter) {
   _currentInvoiceFilter = filter || 'all';
   const tb = $('invoices-tbody'); if (!tb) return;
   const rows = app.bookings
-    .filter(b => b.status !== 'cancelled')
     .filter(b => filter === 'all'
       || (filter === 'invoice' && b.type === 'invoice')
       || (filter === 'quotation' && b.type === 'quotation'));
