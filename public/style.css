@@ -757,11 +757,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   /* ── Page content padding ──────────────────────────────── */
   .page-content { padding:12px 10px 72px; }
 
-  /* ── Modals — full-width bottom sheet on mobile ────────── */
-  .modal-overlay { align-items:flex-end; padding:0; }
+  /* ── Modals — full-width bottom sheet on mobile ───────────── */
+  .modal-overlay { align-items:flex-end; padding:0; overflow:hidden; }
   .modal {
     width:100%; max-width:100%!important; border-radius:20px 20px 0 0;
-    max-height:92dvh; overflow-y:auto; margin:0!important;
+    max-height:92dvh; overflow-y:auto; overflow-x:hidden; margin:0!important;
     padding-bottom:env(safe-area-inset-bottom, 16px);
   }
   /* Login modal stays centered (not bottom sheet) */
@@ -826,7 +826,53 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   .sidebar.mobile-open ~ .sidebar-overlay,
   .sidebar-overlay.active { display:block; }
 
-  /* ── Bottom safe area for iPhone ───────────────────────── */
+  /* ── Form actions — Create Booking aligned right like Create Quotation ─ */
+  .form-actions-three {
+    justify-content: flex-end;   /* right-align all items */
+    flex-wrap: wrap;
+  }
+  .form-actions-three #btn-cancel-form {
+    margin-right: auto;          /* push Cancel to left; submits stay right */
+  }
+
+  /* ── Invoice / Quotation preview — mobile paper layout ──────── */
+  .ipm-modal { width:100%!important; max-width:100%!important; border-radius:20px 20px 0 0; }
+  .ipm-body  { padding:10px; overflow-x:hidden; }
+  .ipm-paper { padding:16px; overflow-x:hidden; }
+
+  /* Paper header: stack logo + doc type vertically on mobile */
+  .ipm-paper-head {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .ipm-doc-block { text-align:left; }
+  .ipm-doc-type  { font-size:16px; }
+
+  /* Stay grid: always 2 columns (check-in | check-out) on mobile */
+  .ipm-stay-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .ipm-duration  { justify-content:flex-start; padding-top:8px; }
+
+  /* Pricing table: hide Quantity + Rate columns; keep Description + Amount */
+  .ipm-table th:nth-child(2),
+  .ipm-table td:nth-child(2),
+  .ipm-table th:nth-child(3),
+  .ipm-table td:nth-child(3) { display:none; }
+  .ipm-table { font-size:12.5px; }
+  .ipm-table th, .ipm-table td { padding:8px 6px; }
+  .ipm-rate-field { width:100%; }
+  .ipm-grand { font-size:14px; }
+
+  /* IPM action footer */
+  .ipm-actions {
+    flex-wrap: wrap; gap:8px;
+  }
+  .ipm-actions .btn { flex:1; min-width:0; font-size:13px; padding:11px 8px; }
+
+  /* Prevent the cancelled stamp from causing overflow */
+  .cancelled-stamp { font-size:48px; padding:6px 14px; }
+
+  /* Bottom safe area for iPhone */
   .page-content { padding-bottom:max(72px, calc(58px + env(safe-area-inset-bottom))); }
 }
 
@@ -835,7 +881,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
    ═══════════════════════════════════════════════════════════ */
 @media(max-width:480px){
   .reports-stat-cards { grid-template-columns:1fr; }
-  .ipm-stay-grid      { grid-template-columns:1fr; }
+  /* ipm-stay-grid keeps 1fr 1fr from the 768px breakpoint — do NOT override */
 
   .login-logo { width:64px; height:64px; }
   .login-modal-brand h2 { font-size:19px; }
