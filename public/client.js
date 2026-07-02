@@ -413,9 +413,9 @@ setInterval(() => {
 
 function renderReports(filter) {
   const confirmed = app.bookings.filter(b => b.status === 'confirmed');
-  const awaiting = app.bookings.filter(b => b.status === 'awaiting');
+  const awaiting = app.bookings.filter(b => b.status === 'awaiting' || (b.status === 'quotation' && effStatus(b) !== 'expired'));
   const quotations = app.bookings.filter(b => b.type === 'quotation');
-  const cancelled = app.bookings.filter(b => b.status === 'cancelled');
+  const cancelled = app.bookings.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
   const bRev = app.bookings.filter(b => b.type === 'invoice' && b.status !== 'cancelled').reduce((s, b) => s + calcTotal(b), 0);
   const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
   $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">Total Revenue</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">from bookings</div></div><div class="stat-card"><div class="stat-card-label">Confirmed</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">bookings</div></div><div class="stat-card"><div class="stat-card-label">Awaiting Payment</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">need follow-up</div></div><div class="stat-card"><div class="stat-card-label">Quotations</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} cancelled/expired</div></div>`;
@@ -424,7 +424,7 @@ function renderReports(filter) {
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} night${n===1?'':'s'}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${statusBadge(effStatus(b))}</td></tr>`;
+    tb.innerHTML += `<tr><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} night${n===1?'':'s'}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
   $('reports-totals').innerHTML = `<span>Quotations value: <strong>${idr(qVal)}</strong></span><span>Bookings revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
 }
