@@ -883,46 +883,80 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   .page-content { padding-bottom:max(72px, calc(58px + env(safe-area-inset-bottom))); }
 
   /* ════════════════════════════════════════════════════════
-     MOBILE CARD 3-LINE LAYOUT
-     Line 1: Guest + Room/Type
-     Line 2: Dates + (X nights)
-     Line 3: Total + Status + [Action button]
-     Technique: flex:1 1 0 on the LAST cell of each line
-     fills the remaining row width → forces wrap at that point.
+     MOBILE CARD GRID LAYOUT
+     Uses explicit CSS Grid areas to precisely match the 
+     user's requested layout and reorder DOM elements.
      ════════════════════════════════════════════════════════ */
 
+  #bookings-tbody tr, #invoices-tbody tr {
+    display: grid;
+    gap: 8px 8px;
+    align-items: center;
+  }
+  
+  #bookings-tbody tr td, #invoices-tbody tr td {
+    white-space: normal;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+  
+  /* Shared: Line 1 (ID & Divider) */
+  #bookings-tbody tr td:nth-child(1),
+  #invoices-tbody tr td:nth-child(1) { 
+    grid-column: 1 / -1; 
+    grid-row: 1;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    width: 100%;
+  }
+
   /* --- ALL BOOKINGS table (9 cols) --- */
-  /* Line 1: td:2 Guest (auto) + td:3 Room (fills line → forces break before Check-In) */
-  #bookings-tbody tr td { white-space:normal; }
-  #bookings-tbody tr td:nth-child(2) { flex:0 0 auto; font-weight:700; font-size:13px; }
-  #bookings-tbody tr td:nth-child(3) { flex:1 1 0; color:var(--text-mid); font-size:12px;
-    justify-content:flex-end; text-align:right; }
-  /* Line 2: td:4 Check-in + td:5 Check-out (with → prefix) + td:6 Nights (fills line) */
-  #bookings-tbody tr td:nth-child(4) { font-size:12px; color:var(--text-mid); }
-  #bookings-tbody tr td:nth-child(5)::before { content:"→ "; color:var(--text-light); }
-  #bookings-tbody tr td:nth-child(5) { font-size:12px; color:var(--text-mid); }
-  #bookings-tbody tr td:nth-child(6) { flex:1 1 0; justify-content:flex-end;
-    font-size:12px; color:var(--text-mid); }
-  /* Wrap nights in parens on mobile: (1 night) */
-  #bookings-tbody tr td:nth-child(6) .nights-label { display:inline; }
+  #bookings-tbody tr {
+    grid-template-columns: max-content 1fr max-content;
+  }
+  
+  /* Line 2: Guest + Room */
+  #bookings-tbody tr td:nth-child(2) { grid-area: 2 / 1 / 3 / 3; font-weight:700; font-size:13px; }
+  #bookings-tbody tr td:nth-child(3) { grid-area: 2 / 3 / 3 / 4; color:var(--text-mid); font-size:12px; justify-content:flex-end; text-align:right; }
+  
+  /* Line 3: Check-in → Check-out */
+  #bookings-tbody tr td:nth-child(4) { grid-area: 3 / 1 / 4 / 2; font-size:12px; color:var(--text-mid); }
+  #bookings-tbody tr td:nth-child(5)::before { content:"→ "; color:var(--text-light); margin-right: 4px; }
+  #bookings-tbody tr td:nth-child(5) { grid-area: 3 / 2 / 4 / 4; font-size:12px; color:var(--text-mid); justify-content:flex-start; }
+  
+  /* Line 4: Total + (Nights) */
+  #bookings-tbody tr td:nth-child(7) { grid-area: 4 / 1 / 5 / 2; font-size:13px; font-weight:700; color:var(--text-dark); }
+  #bookings-tbody tr td:nth-child(6) { grid-area: 4 / 2 / 5 / 4; font-size:12px; color:var(--text-mid); justify-content:flex-start; margin-left: 4px; }
   #bookings-tbody tr td:nth-child(6) .nights-label::before { content:"("; }
   #bookings-tbody tr td:nth-child(6) .nights-label::after  { content:")"; }
-  /* Line 3: td:7 Total + td:8 Status — td:9 View already has margin-left:auto */
-  #bookings-tbody tr td:nth-child(7) { font-size:13px; font-weight:700; color:var(--text-dark); }
+  
+  /* Line 5: Status + View */
+  #bookings-tbody tr td:nth-child(8) { grid-area: 5 / 1 / 6 / 3; }
+  #bookings-tbody tr td:nth-child(9) { grid-area: 5 / 3 / 6 / 4; justify-content:flex-end; }
+
 
   /* --- INVOICES & QUOTES table (8 cols) --- */
-  /* Line 1: td:2 Guest (fills full line → forces break before Dates) */
-  #invoices-tbody tr td { white-space:normal; }
-  #invoices-tbody tr td:nth-child(2) { flex:1 1 0; font-weight:700; font-size:13px; }
-  /* Line 2: td:3 Dates + td:4 Nights (fills line) */
-  #invoices-tbody tr td:nth-child(3) { font-size:12px; color:var(--text-mid); }
-  #invoices-tbody tr td:nth-child(4) { flex:1 1 0; justify-content:flex-end;
-    font-size:12px; color:var(--text-mid); }
-  #invoices-tbody tr td:nth-child(4) .nights-label { display:inline; }
+  #invoices-tbody tr {
+    grid-template-columns: max-content max-content 1fr max-content;
+  }
+  
+  /* Line 2: Guest */
+  #invoices-tbody tr td:nth-child(2) { grid-area: 2 / 1 / 3 / 5; font-weight:700; font-size:13px; }
+  
+  /* Line 3: Dates */
+  #invoices-tbody tr td:nth-child(3) { grid-area: 3 / 1 / 4 / 5; font-size:12px; color:var(--text-mid); }
+  
+  /* Line 4: Total + (Nights) */
+  #invoices-tbody tr td:nth-child(5) { grid-area: 4 / 1 / 5 / 2; font-size:13px; font-weight:700; color:var(--text-dark); }
+  #invoices-tbody tr td:nth-child(4) { grid-area: 4 / 2 / 5 / 5; font-size:12px; color:var(--text-mid); justify-content:flex-start; margin-left: 4px; }
   #invoices-tbody tr td:nth-child(4) .nights-label::before { content:"("; }
   #invoices-tbody tr td:nth-child(4) .nights-label::after  { content:")"; }
-  /* Line 3: td:5 Total + td:6 Type + td:7 Status — td:8 Preview has margin-left:auto */
-  #invoices-tbody tr td:nth-child(5) { font-size:13px; font-weight:700; color:var(--text-dark); }
+  
+  /* Line 5: Type + Status + Action */
+  #invoices-tbody tr td:nth-child(6) { grid-area: 5 / 1 / 6 / 2; }
+  #invoices-tbody tr td:nth-child(7) { grid-area: 5 / 2 / 6 / 3; margin-left: 8px; }
+  #invoices-tbody tr td:nth-child(8) { grid-area: 5 / 4 / 6 / 5; justify-content:flex-end; }
 }
 
 /* ═══════════════════════════════════════════════════════════
