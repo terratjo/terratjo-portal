@@ -869,6 +869,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   .ipm-table td:nth-child(2),
   .ipm-table th:nth-child(3),
   .ipm-table td:nth-child(3) { display:none; }
+  /* Exception: don't hide the 2nd cell of the total row, which holds the grand total */
+  .ipm-table tr.ipm-total-row td:nth-child(2) { display:table-cell; text-align:right; }
+  
   .ipm-table { font-size:12.5px; }
   .ipm-table th, .ipm-table td { padding:8px 6px; }
   .ipm-rate-field { width:100%; }

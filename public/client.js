@@ -402,7 +402,8 @@ setInterval(() => {
     const m = Math.floor((rem % 3600000) / 60000);
     const s = Math.floor((rem % 60000) / 1000);
     const urgent = rem < 30 * 60 * 1000;
-    el.className = `quota-cd${urgent ? ' quota-cd-urgent' : ''}`;
+    const warn = !urgent && rem < 3 * 3600000;
+    el.className = `quota-cd${urgent ? ' quota-cd-urgent' : warn ? ' quota-cd-warn' : ''}`;
     el.textContent = `⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
   });
   if (needsReload) {
