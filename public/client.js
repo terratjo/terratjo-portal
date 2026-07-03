@@ -256,7 +256,8 @@ document.addEventListener('click', e => {
 function renderGlobalSearchResults() {
   const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
   if (!dDesk || !dMob) return;
-  if (!_currentSearch) { dDesk.classList.add('hidden'); dMob.classList.add('hidden'); return; }
+  const showDropdown = ['calendar', 'inventory', 'settings'].includes(prevPage);
+  if (!_currentSearch || !showDropdown) { dDesk.classList.add('hidden'); dMob.classList.add('hidden'); return; }
   const matches = app.bookings.filter(b => (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch));
   let html = '';
   if (matches.length === 0) { html = '<div class="sr-empty">No bookings found for "'+_currentSearch+'"</div>'; }
@@ -279,7 +280,7 @@ window.openSearchResult = function(id) {
   if ($('desktop-search-input').style.display === 'block') $('desktop-search-input').style.display = 'none';
   $('desktop-search-results').classList.add('hidden'); $('mobile-search-results').classList.add('hidden');
   refreshCurrentPage();
-  currentIPMId = id; renderIPM(); $('ipm-modal').classList.add('active'); $('ipm-overlay').classList.add('active');
+  openIPM(id);
   if (window.innerWidth <= 768) closeSidebar();
 }
 function setMbnActive(id) {
