@@ -229,6 +229,7 @@ function handleSearch(e) {
   $('desktop-search-input').value = e.target.value;
   $('mobile-search-input').value = e.target.value;
   refreshCurrentPage();
+  renderGlobalSearchResults();
 }
 $('desktop-search-input')?.addEventListener('input', handleSearch);
 $('mobile-search-input')?.addEventListener('input', handleSearch);
@@ -242,8 +243,45 @@ $('btn-search-toggle')?.addEventListener('click', () => {
     input.value = '';
     _currentSearch = '';
     refreshCurrentPage();
+    renderGlobalSearchResults();
   }
 });
+document.addEventListener('click', e => {
+  if (!e.target.closest('.desktop-search-wrapper') && !e.target.closest('.mobile-search-wrapper')) {
+    const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
+    if (dDesk && !dDesk.classList.contains('hidden')) dDesk.classList.add('hidden');
+    if (dMob && !dMob.classList.contains('hidden')) dMob.classList.add('hidden');
+  }
+});
+function renderGlobalSearchResults() {
+  const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
+  if (!dDesk || !dMob) return;
+  if (!_currentSearch) { dDesk.classList.add('hidden'); dMob.classList.add('hidden'); return; }
+  const matches = app.bookings.filter(b => (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch));
+  let html = '';
+  if (matches.length === 0) { html = '<div class="sr-empty">No bookings found for "'+_currentSearch+'"</div>'; }
+  else {
+    matches.forEach(b => {
+      const isExp = isExpired(b), st = b.status === 'cancelled' ? 'CANCELLED' : (isExp ? 'EXPIRED' : (b.type === 'quotation' ? 'QUOTATION' : 'INVOICE'));
+      const badgeCls = b.status === 'cancelled' || isExp ? 'cancelled' : (b.type === 'quotation' ? 'quotation' : 'invoice');
+      html += `<div class="search-result-item" onclick="openSearchResult('${b.id}')">
+        <div class="sr-title"><span>${b.id}</span> <span class="badge ${badgeCls}">${st}</span></div>
+        <div class="sr-sub"><i data-lucide="user" style="width:12px;height:12px;"></i> ${b.guestName||'No Name'} &nbsp;&bull;&nbsp; ${getRoomName(b.room)}</div>
+      </div>`;
+    });
+  }
+  dDesk.innerHTML = html; dMob.innerHTML = html;
+  dDesk.classList.remove('hidden'); dMob.classList.remove('hidden');
+  lucide.createIcons();
+}
+window.openSearchResult = function(id) {
+  _currentSearch = ''; $('desktop-search-input').value = ''; $('mobile-search-input').value = '';
+  if ($('desktop-search-input').style.display === 'block') $('desktop-search-input').style.display = 'none';
+  $('desktop-search-results').classList.add('hidden'); $('mobile-search-results').classList.add('hidden');
+  refreshCurrentPage();
+  currentIPMId = id; renderIPM(); $('ipm-modal').classList.add('active'); $('ipm-overlay').classList.add('active');
+  if (window.innerWidth <= 768) closeSidebar();
+}
 function setMbnActive(id) {
   document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
   const el = $(id); if (el) el.classList.add('active');
