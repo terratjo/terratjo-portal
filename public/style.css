@@ -85,7 +85,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .weekday-headers{display:grid;grid-template-columns:repeat(7,1fr);background:#f9fafb;text-align:center;padding:8px 0;font-size:10.5px;font-weight:600;letter-spacing:.4px;color:var(--text-light);border-bottom:1px solid var(--border);}
 .days-grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:minmax(90px,1fr);}
 .day-cell{border-right:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;padding:8px 6px;position:relative;cursor:pointer;transition:background .12s;}
-.day-cell:hover{background:#fafafa;}
+.day-cell:hover{background:var(--primary-light);}
 .day-cell:nth-child(7n){border-right:none;}
 .day-number{font-weight:500;font-size:13px;color:var(--text-dark);margin-bottom:4px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}
 .day-number.inactive{color:#d1d5db;font-weight:400;}
@@ -392,7 +392,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
         border-right:none;border-bottom:1px solid #f2f2f7;
         overflow:hidden;
     }
-    .day-cell:hover{background:#f9f9f9;}
+    .day-cell:hover{background:var(--primary-light);}
     .day-number{
         font-size:16px;font-weight:400;margin:0 auto 3px;
         width:28px;height:28px;display:flex;align-items:center;justify-content:center;
