@@ -54,6 +54,8 @@ async function seedData() {
   // Migration: add source (reservation platform) to bookings
   await db.execute('ALTER TABLE bookings ADD COLUMN source TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN additional_fee REAL DEFAULT 0').catch(() => {});
+  // Migration: update existing BK- booking IDs to TJ-
+  await db.execute("UPDATE bookings SET id = REPLACE(id, 'BK-', 'TJ-') WHERE id LIKE 'BK-%'").catch(() => {});
   // Migration: rename 'admin' to 'terratjo' if it exists
   const { rows: adminRows } = await db.execute({ sql:'SELECT id FROM users WHERE username = ?', args:['admin'] });
   if (adminRows.length > 0) {
@@ -285,7 +287,7 @@ app.get('/api/bookings', auth, async (req, res) => {
 app.post('/api/bookings', auth, async (req, res) => {
   const { id,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
           checkinTime,checkoutTime,rate,cleaningFee,additionalFee,deposit,tax,status,notes,promoId,source } = req.body;
-  const idGen = id || `BK-${String(Date.now()).slice(-6)}`;
+  const idGen = id || `TJ-${String(Date.now()).slice(-6)}`;
   const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
   const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0);
   try {

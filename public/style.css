@@ -350,6 +350,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     .top-bar-left{gap:4px;min-width:0;flex:1;}
     .page-title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .mobile-hide{display:none!important;}
+    .desktop-search-wrapper{display:none!important;}
+    .mobile-search-wrapper{display:block!important;}
     .top-bar-right{gap:6px;flex-shrink:0;}
     .top-bar-right .btn{padding:8px;font-size:0;border-radius:10px;}
     .top-bar-right .btn i{width:17px;height:17px;margin:0;}
@@ -661,6 +663,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 
   /* Security card centered on mobile */
   .settings-container > div[style]{margin-left:auto;margin-right:auto;}
+
+  /* ═══════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════ */
 
   /* Promo section full width with padding */
   #page-settings > div[style*="max-width:900px"]{
@@ -1062,3 +1068,4 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   color: #7c3aed; border: 1px solid rgba(124,58,237,.2);
   white-space: nowrap;
 }
+.mobile-search-wrapper { display: none; }

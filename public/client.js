@@ -209,21 +209,49 @@ function initSSE() {
 }
 
 // ── Navigation ───────────────────────────────────────────────────
-function navigate(page) {
-  document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const pg = $('page-' + page); if (pg) pg.classList.remove('hidden');
-  const nav = document.querySelector(`.nav-item[data-page="${page}"]`); if (nav) nav.classList.add('active');
-  prevPage = page; refreshCurrentPage();
+function navigate(pageId) {
+  if (pageId === 'calendar') renderCalendar();
+  if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
+  if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
+  if (pageId === 'reports') renderReports('all');
+  if (pageId === 'inventory') renderInventory();
+  if (pageId === 'settings') renderSettings();
+  document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+  const p = $('page-' + pageId); if (p) p.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.querySelector(`[data-page="${pageId}"]`); if (el) el.classList.add('active');
+  if (window.innerWidth <= 768) closeSidebar();
+  prevPage = pageId;
 }
+// Search Logic
+function handleSearch(e) {
+  _currentSearch = e.target.value.toLowerCase().trim();
+  $('desktop-search-input').value = e.target.value;
+  $('mobile-search-input').value = e.target.value;
+  refreshCurrentPage();
+}
+$('desktop-search-input')?.addEventListener('input', handleSearch);
+$('mobile-search-input')?.addEventListener('input', handleSearch);
+$('btn-search-toggle')?.addEventListener('click', () => {
+  const input = $('desktop-search-input');
+  if (input.style.display === 'none') {
+    input.style.display = 'block';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = '';
+    _currentSearch = '';
+    refreshCurrentPage();
+  }
+});
 function setMbnActive(id) {
   document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
   const el = $(id); if (el) el.classList.add('active');
 }
 function refreshCurrentPage() {
   if (prevPage === 'calendar') renderCalendar();
-  if (prevPage === 'all-bookings') renderBookings('all');
-  if (prevPage === 'invoices') renderInvoices('all');
+  if (prevPage === 'all-bookings') renderBookings(_currentBookingFilter);
+  if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (prevPage === 'reports') renderReports('all');
   if (prevPage === 'inventory') renderInventory();
   if (prevPage === 'settings') renderSettings();
@@ -357,6 +385,8 @@ function renderBookings(filter) {
   _currentBookingFilter = filter || 'all';
   const tb = $('bookings-tbody'); if (!tb) return;
   const rows = app.bookings.filter(b => {
+    const match = !_currentSearch || (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch);
+    if (!match) return false;
     const es = effStatus(b);
     if (filter === 'all') return true;
     if (filter === 'cancelled') return b.status === 'cancelled' || es === 'expired';
@@ -378,6 +408,7 @@ function renderInvoices(filter) {
   _currentInvoiceFilter = filter || 'all';
   const tb = $('invoices-tbody'); if (!tb) return;
   const rows = app.bookings
+    .filter(b => !_currentSearch || (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch))
     .filter(b => filter === 'all'
       || (filter === 'invoice' && b.type === 'invoice')
       || (filter === 'quotation' && b.type === 'quotation'));
@@ -419,7 +450,9 @@ function renderReports(filter) {
   const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
   $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">Total Revenue</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">from bookings</div></div><div class="stat-card"><div class="stat-card-label">Confirmed</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">bookings</div></div><div class="stat-card"><div class="stat-card-label">Awaiting Payment</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">need follow-up</div></div><div class="stat-card"><div class="stat-card-label">Quotations</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} cancelled/expired</div></div>`;
   const tb = $('reports-tbody'); if (!tb) return;
-  const rows = app.bookings.filter(b => filter === 'all' || (filter === 'booking' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
+  const rows = app.bookings
+    .filter(b => !_currentSearch || (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch))
+    .filter(b => filter === 'all' || (filter === 'booking' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
@@ -576,6 +609,7 @@ window.openIPM = function(id) {
   $('ipm-meta-room').textContent = (b.numGuests||1)+' guest'+(b.numGuests>1?'s':'')+' · Room: '+getRoomName(b.room);
   $('ipm-ci-date').value = b.checkin; $('ipm-ci-time').value = b.checkinTime||'14:00'; $('ipm-co-date').value = b.checkout; $('ipm-co-time').value = b.checkoutTime||'12:00'; $('ipm-duration').textContent = n+' Night'+(n>1?'s':'');
   $('ipm-t-nights').textContent = n+' night'+(n>1?'s':''); $('ipm-t-rate').value = b.rate; $('ipm-t-room-amt').textContent = idr(acc);
+  if($('ipm-t-nights').previousElementSibling) $('ipm-t-nights').previousElementSibling.textContent = getRoomName(b.room);
   $('ipm-t-cleaning').textContent = idr(b.cleaningFee); $('ipm-row-cleaning').classList.toggle('hidden', b.cleaningFee<=0);
   $('ipm-t-additional').textContent = idr(b.additionalFee||0); $('ipm-row-additional').classList.toggle('hidden', (b.additionalFee||0)<=0);
   $('ipm-t-deposit').textContent = idr(b.deposit); $('ipm-row-deposit').classList.toggle('hidden', b.deposit<=0);
@@ -766,7 +800,7 @@ function printInvoice() {
     + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:36px 44px}.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid #f0f0f0}.brand{display:flex;align-items:center;gap:14px}.bn{font-family:"Playfair Display",serif;font-size:22px;font-weight:700}.bs{font-size:12px;color:#888;margin-top:2px}.dt{font-family:"Playfair Display",serif;font-size:30px;font-weight:700;color:#ffc823;text-align:right}.dm{font-size:11px;color:#666;margin-top:4px;text-align:right}h3{font-size:13px;font-weight:700;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid #f0f0f0}.lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#888;margin-bottom:2px}.val{font-size:15px;font-weight:700;padding-bottom:6px;border-bottom:1.5px solid #ffc823;margin-bottom:10px}.vsm{font-size:13px;padding-bottom:5px;border-bottom:1px solid #eee;margin-bottom:10px}.meta{font-size:12px;color:#555;margin-bottom:3px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}hr{border:none;border-top:1px solid #f0f0f0;margin:16px 0}table{width:100%;border-collapse:collapse;margin:8px 0}thead tr{background:#1a1a2e}thead th{padding:8px 12px;font-size:11px;font-weight:600;color:#fff;text-align:left;text-transform:uppercase}tbody td{padding:7px 12px;font-size:12px;border-bottom:1px solid #f0f0f0}tbody tr:nth-child(even){background:#fafafa}.tt{background:#1a1a2e!important}.tt td{color:#ffc823;font-weight:700;font-size:13px;border:none}.pay{display:flex;justify-content:space-between;align-items:flex-start;border-top:1px solid #eee;padding-top:14px;margin-top:14px}.pl{font-weight:700;font-size:12px;margin-bottom:6px}.pm{font-size:11px;color:#444;margin-bottom:3px}.nb{background:#fffbeb;border-left:3px solid #ffc823;border-radius:4px;padding:10px 14px;font-size:12px;margin:12px 0}footer{text-align:center;padding-top:12px;border-top:1px solid #eee;margin-top:12px;font-size:11px;color:#999}@media print{body{padding:10mm 12mm}@page{size:A4 portrait;margin:0}}</style></head><body>'
     + '<div class="hdr"><div class="brand">'+logoHtml+'<div><div class="bn">'+(s.brand||'Terratjo Room')+'</div><div class="bs">'+(s.invAddress||'')+'</div></div></div>'
-    + '<div><div class="dt">'+type+'</div><div class="dm">Date: '+todayStr+'</div></div></div>'
+    + '<div><div class="dt">'+type+'</div><div class="dm" style="font-weight:700; color:#1a1a2e; margin-bottom: 2px;">'+b.id+'</div><div class="dm">Date: '+todayStr+'</div></div></div>'
     + '<h3>Guest Information</h3>'
     + '<div class="lbl">Guest Name</div><div class="val">'+(b.guestName||'-')+'</div>'
     + '<div class="lbl">Address</div><div class="vsm">'+(b.address||'-')+'</div>'
@@ -778,7 +812,7 @@ function printInvoice() {
     + '<div class="meta" style="font-weight:600;margin-top:4px">Duration: '+nights+' night(s)</div>'
     + '<hr><h3>Pricing Details</h3>'
     + '<table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>'
-    + '<tr><td>Room Rate</td><td>'+nights+' night(s)</td><td>'+fmtMoney(b.rate)+'</td><td>'+fmtMoney(roomAmt)+'</td></tr>'
+    + '<tr><td>'+roomName+'</td><td>'+nights+' night(s)</td><td>'+fmtMoney(b.rate)+'</td><td>'+fmtMoney(roomAmt)+'</td></tr>'
     + ((b.cleaningFee||0)>0 ? '<tr><td>Cleaning Fee</td><td>1</td><td>-</td><td>'+fmtMoney(b.cleaningFee)+'</td></tr>' : '')
     + ((b.additionalFee||0)>0 ? '<tr><td>Additional Fee</td><td>1</td><td>-</td><td>'+fmtMoney(b.additionalFee)+'</td></tr>' : '')
     + ((b.deposit||0)>0 ? '<tr><td>Deposit</td><td>1</td><td>-</td><td>'+fmtMoney(b.deposit)+'</td></tr>' : '')

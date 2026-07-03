@@ -33,6 +33,12 @@
             <span class="subtitle">Booking Portal</span>
         </div>
         <nav class="sidebar-nav">
+            <div class="nav-section mobile-search-wrapper" style="padding: 0 20px 10px;">
+                <div style="position:relative;">
+                    <i data-lucide="search" style="position:absolute; left:10px; top:10px; width:16px; height:16px; color:var(--text-light)"></i>
+                    <input type="text" id="mobile-search-input" placeholder="Search..." style="width:100%; padding:8px 10px 8px 32px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg-light); color:var(--text-dark);">
+                </div>
+            </div>
             <div class="nav-section">
                 <h3>BOOKINGS</h3>
                 <a href="#" class="nav-item active" data-page="calendar"><i data-lucide="calendar"></i> <span data-i18n="nav.calendar">Calendar</span></a>
@@ -72,6 +78,10 @@
                 <span class="location-badge mobile-hide" id="topbar-location">Taman Melati Apt - Yogyakarta</span>
             </div>
             <div class="top-bar-right">
+                <div class="desktop-search-wrapper" style="display:flex; align-items:center; position:relative; margin-right:12px;">
+                    <input type="text" id="desktop-search-input" placeholder="Search..." style="display:none; width:200px; padding:8px 12px 8px 32px; border:1px solid var(--border); border-radius:20px; font-size:13px; background:var(--bg-light); color:var(--text-dark); transition: width 0.3s ease;">
+                    <button class="btn-icon" id="btn-search-toggle" style="background:transparent; border:none; cursor:pointer; color:var(--text-mid); padding:6px; position:absolute; left:0; z-index:10;"><i data-lucide="search" style="width:18px;height:18px;"></i></button>
+                </div>
                 <button class="btn btn-primary" id="btn-new-booking"><i data-lucide="calendar-plus"></i> <span data-i18n="btn.new-booking">New Booking</span></button>
                 <button class="btn btn-secondary" id="btn-new-quotation"><i data-lucide="file-plus"></i> <span data-i18n="btn.new-quotation">New Quotation</span></button>
             </div>
@@ -603,6 +613,7 @@
                     </div>
                     <div class="ipm-doc-block">
                         <span class="ipm-doc-type" id="ipm-doc-type">INVOICE</span>
+                        <small id="ipm-doc-id" style="font-weight:700; margin-bottom: 2px; color:var(--text-dark); font-size:13px; display:block;">TJ-123456</small>
                         <small id="ipm-doc-date">Date: —</small>
                     </div>
                 </div>
