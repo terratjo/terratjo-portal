@@ -1158,3 +1158,35 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     .sr-room { font-size: 10.5px; }
     .sr-sub { font-size: 10.5px; }
 }
+
+/* ── IPAD PORTRAIT FIXES (769px - 1100px) ────────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .top-bar {
+        height: auto;
+        min-height: 62px;
+        padding: 16px 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .top-bar-left {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .top-bar-right {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    .page-title {
+        white-space: nowrap;
+        font-size: 18px;
+    }
+    .location-badge {
+        white-space: nowrap;
+    }
+    /* Allow calendar to scroll internally if screen is too short */
+    .calendar-container {
+        height: calc(100vh - 140px);
+        min-height: 600px;
+    }
+}
