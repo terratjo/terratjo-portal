@@ -421,7 +421,7 @@ function quotaStatusCell(b) {
   return `<div class="${cls}" data-expiry="${expiry}">⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</div>`;
 }
 
-let _currentBookingFilter = 'all', _currentInvoiceFilter = 'all';
+let _currentSearch = '', _currentBookingFilter = 'all', _currentInvoiceFilter = 'all';
 
 function renderBookings(filter) {
   _currentBookingFilter = filter || 'all';
