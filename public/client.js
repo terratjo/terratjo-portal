@@ -372,7 +372,7 @@ function renderCalendar() {
   const dim = new Date(calYear, calMonth + 1, 0).getDate();
   const prevDim = new Date(calYear, calMonth, 0).getDate();
   // todayStr is the global Jakarta-timezone string — no local re-declaration needed
-  for (let i = first - 1; i >= 0; i--) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${prevDim - i}</div></div>`;
+  for (let i = first - 1; i >= 0; i--) grid.innerHTML += `<div class="day-cell past"><div class="day-number inactive">${prevDim - i}</div></div>`;
   for (let d = 1; d <= dim; d++) {
     const ds = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = ds === todayStr; const isWE = [0, 6].includes(new Date(calYear, calMonth, d).getDay());
@@ -383,10 +383,10 @@ function renderCalendar() {
         blks += `<div class="booking-block booking-${effStatus(b)}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
       }
     });
-    grid.innerHTML += `<div class="day-cell" data-date="${ds}"><div class="day-number ${cls}">${d}</div>${blks}</div>`;
+    const isPast = ds < todayStr; grid.innerHTML += `<div class="day-cell ${isPast ? 'past' : ''}" data-date="${ds}"><div class="day-number ${cls}">${d}</div>${blks}</div>`;
   }
   const total = first + dim; const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell"><div class="day-number inactive">${i}</div></div>`;
+  for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell past"><div class="day-number inactive">${i}</div></div>`;
   document.querySelectorAll('.day-cell[data-date]').forEach(cell => cell.addEventListener('click', () => {
     if (window.innerWidth <= 768) { showDayDetail(cell.dataset.date); }
     else { openForm('booking', cell.dataset.date, null); }
