@@ -247,11 +247,14 @@ $('btn-search-toggle')?.addEventListener('click', () => {
   }
 });
 document.addEventListener('click', e => {
-  if (!e.target.closest('.desktop-search-wrapper') && !e.target.closest('.mobile-search-wrapper')) {
-    const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
-    if (dDesk && !dDesk.classList.contains('hidden')) dDesk.classList.add('hidden');
-    if (dMob && !dMob.classList.contains('hidden')) dMob.classList.add('hidden');
-  }
+  try {
+    if (!e.target || !e.target.closest) return;
+    if (!e.target.closest('.desktop-search-wrapper') && !e.target.closest('.mobile-search-wrapper')) {
+      const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
+      if (dDesk && !dDesk.classList.contains('hidden')) dDesk.classList.add('hidden');
+      if (dMob && !dMob.classList.contains('hidden')) dMob.classList.add('hidden');
+    }
+  } catch(err) { console.error(err); }
 });
 function renderGlobalSearchResults() {
   const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
@@ -965,3 +968,6 @@ $('promo-form')?.addEventListener('submit', async e => {
   } catch (e) { showToast('Save failed: ' + e.message); }
 });
 ['btn-close-promo-modal','btn-cancel-promo'].forEach(id => $(id)?.addEventListener('click', () => $('promo-modal').classList.remove('active')));
+window.addEventListener('error', function(e) {
+  alert('Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
