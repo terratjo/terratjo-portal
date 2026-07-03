@@ -35,6 +35,16 @@ const LANG = {
     'form.deposit':'DEPOSIT (RP)','form.tax':'TAX (%)','form.notes':'NOTES / SPECIAL REQUESTS',
     'fs.rate':'Rate per night','fs.night':'night','fs.accommodation':'Accommodation',
     'fs.cleaning':'Cleaning fee','fs.deposit':'Deposit','fs.tax':'Tax','fs.total':'Total',
+      
+    'th.guest':'GUEST', 'th.room':'ROOM', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'NIGHTS', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TYPE', 'th.dates':'DATES', 'th.rate':'RATE/NIGHT', 'th.desc':'Description', 'th.qty':'Quantity', 'th.amount':'Amount',
+    'lbl.night':'night', 'lbl.nights':'nights', 'lbl.no_bookings':'No bookings found.', 'lbl.no_documents':'No documents found.',
+    'st.confirmed':'Confirmed', 'st.awaiting':'Awaiting Payment', 'st.quotation':'Quotation', 'st.cancelled':'Cancelled', 'st.expired':'Expired', 'st.invoice':'Invoice',
+    'rep.rev':'Total Revenue', 'rep.from_bookings':'from bookings', 'rep.confirmed':'Confirmed', 'rep.bookings':'bookings', 'rep.awaiting':'Awaiting Payment', 'rep.need_follow':'need follow-up', 'rep.quotations':'Quotations', 'rep.cancelled_exp':'cancelled/expired',
+    'inv.max':'Max', 'inv.guests':'guests', 'inv.night':'night', 'inv.edit':'Edit', 'inv.delete':'Delete', 'inv.add_room':'Add Room',
+    'cal.jan':'January', 'cal.feb':'February', 'cal.mar':'March', 'cal.apr':'April', 'cal.may':'May', 'cal.jun':'June', 'cal.jul':'July', 'cal.aug':'August', 'cal.sep':'September', 'cal.oct':'October', 'cal.nov':'November', 'cal.dec':'December',
+    'cal.su':'Su', 'cal.mo':'Mo', 'cal.tu':'Tu', 'cal.we':'We', 'cal.th':'Th', 'cal.fr':'Fr', 'cal.sa':'Sa',
+    'btn.preview': 'Preview', 'btn.view': 'View'
+  
   },
   id: {
     'nav.calendar':'Kalender','nav.bookings':'Semua Pemesanan','nav.invoices':'Faktur & Penawaran',
@@ -60,6 +70,16 @@ const LANG = {
     'form.deposit':'DEPOSIT (RP)','form.tax':'PAJAK (%)','form.notes':'CATATAN / PERMINTAAN KHUSUS',
     'fs.rate':'Tarif per malam','fs.night':'malam','fs.accommodation':'Akomodasi',
     'fs.cleaning':'Biaya kebersihan','fs.deposit':'Deposit','fs.tax':'Pajak','fs.total':'Total',
+      
+    'th.guest':'TAMU', 'th.room':'KAMAR', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'MALAM', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TIPE', 'th.dates':'TANGGAL', 'th.rate':'TARIF/MALAM', 'th.desc':'Deskripsi', 'th.qty':'Jumlah', 'th.amount':'Jumlah',
+    'lbl.night':'malam', 'lbl.nights':'malam', 'lbl.no_bookings':'Tidak ada pemesanan ditemukan.', 'lbl.no_documents':'Tidak ada dokumen ditemukan.',
+    'st.confirmed':'Terkonfirmasi', 'st.awaiting':'Menunggu Pembayaran', 'st.quotation':'Penawaran', 'st.cancelled':'Dibatalkan', 'st.expired':'Kedaluwarsa', 'st.invoice':'Faktur',
+    'rep.rev':'Total Pendapatan', 'rep.from_bookings':'dari pemesanan', 'rep.confirmed':'Terkonfirmasi', 'rep.bookings':'pemesanan', 'rep.awaiting':'Menunggu Pembayaran', 'rep.need_follow':'perlu ditindaklanjuti', 'rep.quotations':'Penawaran', 'rep.cancelled_exp':'dibatalkan/kedaluwarsa',
+    'inv.max':'Maks', 'inv.guests':'tamu', 'inv.night':'malam', 'inv.edit':'Ubah', 'inv.delete':'Hapus', 'inv.add_room':'Tambah Kamar',
+    'cal.jan':'Januari', 'cal.feb':'Februari', 'cal.mar':'Maret', 'cal.apr':'April', 'cal.may':'Mei', 'cal.jun':'Juni', 'cal.jul':'Juli', 'cal.aug':'Agustus', 'cal.sep':'September', 'cal.oct':'Oktober', 'cal.nov':'November', 'cal.dec':'Desember',
+    'cal.su':'Mg', 'cal.mo':'Sn', 'cal.tu':'Sl', 'cal.we':'Rb', 'cal.th':'Km', 'cal.fr':'Jm', 'cal.sa':'Sb',
+    'btn.preview': 'Pratinjau', 'btn.view': 'Lihat'
+  
   }
 };
 let currentLang = localStorage.getItem('terratjo_lang') || 'en';
@@ -67,17 +87,19 @@ let currentLang = localStorage.getItem('terratjo_lang') || 'en';
 function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem('terratjo_lang', lang);
-  const t = LANG[lang];
+  const tArr = LANG[lang];
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
-    if (t[key] !== undefined) el.textContent = t[key];
+    if (tArr[key] !== undefined) el.textContent = tArr[key];
   });
-  // Update toggle button active state
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lang || btn.textContent.trim() === lang.toUpperCase());
   });
+  if (typeof refreshCurrentPage === 'function') refreshCurrentPage();
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 window.setLanguage = setLanguage;
+window.t = function(key) { return (LANG[currentLang] && LANG[currentLang][key]) || (LANG['en'] && LANG['en'][key]) || key; };
 
 // ── Mobile Sidebar ───────────────────────────────────────────────
 function openSidebar() {
@@ -130,8 +152,8 @@ const promoStatus = p => { const t = todayStr; if (!p.startDate || !p.endDate) r
 const calcPromoDiscount = (promo, acc) => !promo ? 0 : promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc);
 
 function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
-function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:'Confirmed', awaiting:'Awaiting Payment', quotation:'Quotation', cancelled:'Cancelled', expired:'Expired' }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
-function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">Quotation</span>` : `<span class="badge badge-invoice">Invoice</span>`; }
+function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:t('st.confirmed'), awaiting:t('st.awaiting'), quotation:t('st.quotation'), cancelled:t('st.cancelled'), expired:t('st.expired') }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
+function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">${t('st.quotation')}</span>` : `<span class="badge badge-invoice">${t('st.invoice')}</span>`; }
 
 // ── Auth UI ─────────────────────────────────────────────────────
 function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('active'); setLanguage(currentLang); }
@@ -275,7 +297,7 @@ function renderGlobalSearchResults() {
     });
   }
   dDesk.innerHTML = html; dMob.innerHTML = html;
-  dDesk.classList.remove('hidden'); dMob.classList.remove('hidden');
+  dDesk.classList.remove('hidden'); dMob.classList.add('hidden'); // disable mobile dropdown
   lucide.createIcons();
 }
 window.openSearchResult = function(id) {
@@ -302,7 +324,7 @@ document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click'
 
 // ── Calendar ─────────────────────────────────────────────────────
 function renderCalendar() {
-  $('current-month-display').textContent = ['January','February','March','April','May','June','July','August','September','October','November','December'][calMonth] + ' ' + calYear;
+  $('current-month-display').textContent = [t('cal.jan'),t('cal.feb'),t('cal.mar'),t('cal.apr'),t('cal.may'),t('cal.jun'),t('cal.jul'),t('cal.aug'),t('cal.sep'),t('cal.oct'),t('cal.nov'),t('cal.dec')][calMonth] + ' ' + calYear;
   const grid = $('days-grid'); if (!grid) return; grid.innerHTML = '';
   const first = new Date(calYear, calMonth, 1).getDay();
   const dim = new Date(calYear, calMonth + 1, 0).getDate();
@@ -441,7 +463,7 @@ function renderBookings(filter) {
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} night${n===1?'':'s'}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
@@ -459,7 +481,7 @@ function renderInvoices(filter) {
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
     const es = effStatus(b);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} night${n===1?'':'s'}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
@@ -490,7 +512,7 @@ function renderReports(filter) {
   const cancelled = app.bookings.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
   const bRev = app.bookings.filter(b => b.type === 'invoice' && b.status !== 'cancelled').reduce((s, b) => s + calcTotal(b), 0);
   const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
-  $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">Total Revenue</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">from bookings</div></div><div class="stat-card"><div class="stat-card-label">Confirmed</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">bookings</div></div><div class="stat-card"><div class="stat-card-label">Awaiting Payment</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">need follow-up</div></div><div class="stat-card"><div class="stat-card-label">Quotations</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} cancelled/expired</div></div>`;
+  $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">${t('rep.rev')}</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">${t('rep.from_bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.confirmed')}</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">${t('rep.bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.awaiting')}</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">${t('rep.need_follow')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.quotations')}</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} ${t('rep.cancelled_exp')}</div></div>`;
   const tb = $('reports-tbody'); if (!tb) return;
   const rows = app.bookings
     .filter(b => !_currentSearch || (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch))
@@ -498,9 +520,9 @@ function renderReports(filter) {
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} night${n===1?'':'s'}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
-  $('reports-totals').innerHTML = `<span>Quotations value: <strong>${idr(qVal)}</strong></span><span>Bookings revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
+  $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
 }
 $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#reports-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderReports(e.target.dataset.filter); });
 
@@ -508,7 +530,7 @@ $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-
 function renderInventory() {
   const list = $('rooms-list'); if (!list) return; list.innerHTML = '';
   app.rooms.forEach(r => {
-    list.innerHTML += `<div class="room-card"><div class="room-card-info"><h3>${r.name}</h3><p>${r.location} · Max ${r.capacity} guests · ${idr(r.rate)}/night</p><p>${r.desc||''}</p></div><div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">Delete</button></div></div>`;
+    list.innerHTML += `<div class="room-card"><div class="room-card-info"><h3>${r.name}</h3><p>${r.location} · ${t('inv.max')} ${r.capacity} ${t('inv.guests')} &middot; ${idr(r.rate)}/${t('inv.night')}</p><p>${r.desc||''}</p></div><div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">${t('inv.edit')}</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">${t('inv.delete')}</button></div></div>`;
   });
 }
 window.openEditRoom = id => {
@@ -901,7 +923,7 @@ function renderPromos() {
         <td style="font-size:12px;">${period}</td>
         <td>${badge(st)}</td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">Edit</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">${t('inv.edit')}</button>
           <button class="btn btn-danger btn-sm" onclick="deletePromo('${p.id}')">Del</button>
         </td>
       </tr>`;
