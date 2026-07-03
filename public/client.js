@@ -332,7 +332,8 @@ function renderGlobalSearchResults() {
       const badgeCls = b.status === 'cancelled' || isExp ? 'cancelled' : (b.type === 'quotation' ? 'quotation' : 'invoice');
       html += `<div class="search-result-item" onclick="openSearchResult('${b.id}')">
         <div class="sr-title"><span>${b.id}</span></div>
-        <div class="sr-sub"><i data-lucide="user" style="width:12px;height:12px;"></i> ${b.guestName||'No Name'} &nbsp;&bull;&nbsp; ${getRoomName(b.room)}</div>
+        <div class="sr-room"><span style="opacity:0.5; margin-right:4px;">&bull;</span> ${getRoomName(b.room)}</div>
+        <div class="sr-sub"><i data-lucide="user" style="width:12px;height:12px;"></i> ${b.guestName||'No Name'}</div>
         <div class="sr-badge"><span class="badge ${badgeCls}">${st}</span></div>
       </div>`;
     });

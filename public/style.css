@@ -1091,8 +1091,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     transform: translateX(4px);
     border-bottom-color: transparent;
 }
+.sr-room {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 11.5px;
+    color: var(--text-mid);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-weight: 500;
+}
 .sr-title { 
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 1;
     font-size:13.5px; 
     font-weight:700; 
