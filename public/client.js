@@ -148,12 +148,12 @@ const todayStr = _todayJkt; // Already "YYYY-MM-DD" in Jakarta timezone — no t
 const isExpired = b => b.status === 'expired' || (b.status === 'quotation' && b.checkin < todayStr);
 const effStatus = b => isExpired(b) ? 'expired' : b.status;
 // Promo helpers
-const promoStatus = p => { const t = todayStr; if (!p.startDate || !p.endDate) return 'inactive'; if (t < p.startDate) return 'scheduled'; if (t > p.endDate) return 'inactive'; return 'ongoing'; };
+const promoStatus = p => { const today = todayStr; if (!p.startDate || !p.endDate) return 'inactive'; if (today < p.startDate) return 'scheduled'; if (today > p.endDate) return 'inactive'; return 'ongoing'; };
 const calcPromoDiscount = (promo, acc) => !promo ? 0 : promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc);
 
-function showToast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+function showToast(msg) { const toastEl = $('toast'); toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 2800); }
 function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:t('st.confirmed'), awaiting:t('st.awaiting'), quotation:t('st.quotation'), cancelled:t('st.cancelled'), expired:t('st.expired') }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
-function typeBadge(t) { return t === 'quotation' ? `<span class="badge badge-quotation">${t('st.quotation')}</span>` : `<span class="badge badge-invoice">${t('st.invoice')}</span>`; }
+function typeBadge(typeVal) { return typeVal === 'quotation' ? `<span class="badge badge-quotation">${t('st.quotation')}</span>` : `<span class="badge badge-invoice">${t('st.invoice')}</span>`; }
 
 // ── Auth UI ─────────────────────────────────────────────────────
 function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('active'); setLanguage(currentLang); }
@@ -297,7 +297,7 @@ function renderGlobalSearchResults() {
     });
   }
   dDesk.innerHTML = html; dMob.innerHTML = html;
-  dDesk.classList.remove('hidden'); dMob.classList.add('hidden'); // disable mobile dropdown
+  dDesk.classList.remove('hidden'); dMob.classList.remove('hidden');
   lucide.createIcons();
 }
 window.openSearchResult = function(id) {
