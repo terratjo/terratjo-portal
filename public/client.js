@@ -642,6 +642,7 @@ window.openIPM = function(id) {
   const docLabel = b.status==='cancelled' ? 'CANCELLED' : (isExpiredQ ? 'EXPIRED QUOTATION' : (b.type==='quotation' ? 'QUOTATION' : 'INVOICE'));
   const docEl = $('ipm-doc-type'); docEl.textContent = docLabel;
   docEl.style.color = b.status==='cancelled' ? '#b91c1c' : (isExpiredQ ? '#6b7280' : 'var(--primary)');
+  $('ipm-doc-id').textContent = b.id;
   $('ipm-doc-date').textContent = 'Date: ' + shortDate(fmt(today));
   const stamp = $('ipm-cancelled-stamp'); b.status==='cancelled'?stamp.classList.remove('hidden'):stamp.classList.add('hidden');
   $('ipm-f-name').value = b.guestName||''; $('ipm-f-addr').value = b.address||''; $('ipm-meta-contact').textContent = (b.guestEmail||'') + (b.phone?' · '+b.phone:'');
