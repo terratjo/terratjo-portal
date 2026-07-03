@@ -56,6 +56,15 @@ const LANG = {
     'set.email':'Contact Email', 'set.phone':'Contact Phone / WA', 'set.web':'Website (Optional)', 'set.bank':'Bank Name', 'set.acc_no':'Account Number', 'set.acc_name':'Account Holder Name', 'set.terms':'Payment Instructions / Terms',
     'set.msg':'Thank You Message (Invoice Footer)', 'set.inv_prev':'Invoice Header Preview'
   
+  ,    
+    'th.discount':'DISCOUNT', 'th.period':'PERIOD',
+    'promo.ongoing':'Ongoing', 'promo.scheduled':'Scheduled', 'promo.inactive':'Inactive', 'promo.all_rooms':'All Rooms'
+  
+  ,    
+    'promo.lbl_desc':'PROMO DESCRIPTION', 'promo.lbl_type':'DISCOUNT TYPE', 'promo.lbl_room':'APPLY TO ROOM', 'promo.lbl_start':'START DATE', 'promo.lbl_end':'END DATE',
+    'promo.type_perc':'Percentage (%)', 'promo.type_fixed':'Fixed Amount (Rp)',
+    'promo.val_perc':'DISCOUNT (%)', 'promo.val_fixed':'DISCOUNT AMOUNT (RP)'
+  
   },
   id: {
     'nav.calendar':'Kalender','nav.bookings':'Semua Pemesanan','nav.invoices':'Faktur & Penawaran',
@@ -101,6 +110,15 @@ const LANG = {
     'set.brand':'Nama Merek / Properti', 'set.tagline':'Slogan / Sub-merek', 'set.loc':'Lokasi / Alamat (Top Bar)', 'set.inv_add':'Alamat Kop Faktur',
     'set.email':'Email Kontak', 'set.phone':'Telepon / WA', 'set.web':'Situs Web (Opsional)', 'set.bank':'Nama Bank', 'set.acc_no':'Nomor Rekening', 'set.acc_name':'Nama Pemilik Rekening', 'set.terms':'Instruksi / Syarat Pembayaran',
     'set.msg':'Pesan Terima Kasih (Footer Faktur)', 'set.inv_prev':'Pratinjau Kop Faktur'
+  
+  ,    
+    'th.discount':'DISKON', 'th.period':'PERIODE',
+    'promo.ongoing':'Berlangsung', 'promo.scheduled':'Dijadwalkan', 'promo.inactive':'Tidak Aktif', 'promo.all_rooms':'Semua Kamar'
+  
+  ,    
+    'promo.lbl_desc':'DESKRIPSI PROMO', 'promo.lbl_type':'TIPE DISKON', 'promo.lbl_room':'TERAPKAN PADA KAMAR', 'promo.lbl_start':'TANGGAL MULAI', 'promo.lbl_end':'TANGGAL BERAKHIR',
+    'promo.type_perc':'Persentase (%)', 'promo.type_fixed':'Nominal Tetap (Rp)',
+    'promo.val_perc':'DISKON (%)', 'promo.val_fixed':'NOMINAL DISKON (RP)'
   
   }
 };
@@ -928,15 +946,15 @@ function renderPromos() {
     list.innerHTML = '<div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div>'; return;
   }
   const badge = s => {
-    const cfg = { ongoing:{cls:'promo-badge-ongoing',lbl:'🟢 Ongoing'}, scheduled:{cls:'promo-badge-scheduled',lbl:'🔵 Scheduled'}, inactive:{cls:'promo-badge-inactive',lbl:'⚫ Inactive'} }[s] || {cls:'',lbl:s};
+    const cfg = { ongoing:{cls:'promo-badge-ongoing',lbl:'🟢 '+t('promo.ongoing')}, scheduled:{cls:'promo-badge-scheduled',lbl:'🔵 '+t('promo.scheduled')}, inactive:{cls:'promo-badge-inactive',lbl:'⚫ '+t('promo.inactive')} }[s] || {cls:'',lbl:s};
     return `<span class="promo-badge ${cfg.cls}">${cfg.lbl}</span>`;
   };
   list.innerHTML = `<div class="promo-table-wrap"><table class="promo-table">
-    <thead><tr><th>Description</th><th>Room</th><th>Discount</th><th>Period</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>${t('th.desc')}</th><th>${t('th.room')}</th><th>${t('th.discount')}</th><th>${t('th.period')}</th><th>${t('th.status')}</th><th></th></tr></thead>
     <tbody>${app.promos.map(p => {
       const st = promoStatus(p);
       const disc = p.type === 'percentage' ? `-${p.value}%` : `-${idr(p.value)}`;
-      const room = p.roomId === 'all' ? 'All Rooms' : getRoomName(p.roomId);
+      const room = p.roomId === 'all' ? t('promo.all_rooms') : getRoomName(p.roomId);
       const period = p.startDate && p.endDate ? `${shortDate(p.startDate)} → ${shortDate(p.endDate)}` : '—';
       return `<tr>
         <td><strong>${p.name}</strong></td>
@@ -946,7 +964,7 @@ function renderPromos() {
         <td>${badge(st)}</td>
         <td style="white-space:nowrap;">
           <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">${t('inv.edit')}</button>
-          <button class="btn btn-danger btn-sm" onclick="deletePromo('${p.id}')">Del</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePromo('${p.id}')">${t('inv.delete')}</button>
         </td>
       </tr>`;
     }).join('')}</tbody>
@@ -961,7 +979,7 @@ window.openEditPromo = function(id) {
   $('promo-start').value = p.startDate||''; $('promo-end').value = p.endDate||'';
   populatePromoRoomSelect(); $('promo-room').value = p.roomId || 'all';
   document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === p.type));
-  $('promo-value-label').textContent = p.type === 'percentage' ? 'DISCOUNT (%)' : 'DISCOUNT AMOUNT (RP)';
+  $('promo-value-label').textContent = p.type === 'percentage' ? t('promo.val_perc') : t('promo.val_fixed');
   updatePromoStatusPreview();
   $('promo-modal').classList.add('active');
 };
@@ -987,7 +1005,7 @@ function updatePromoStatusPreview() {
 
 $('btn-add-promo')?.addEventListener('click', () => {
   $('promo-modal-title').textContent = 'Add Promo'; $('promo-form').reset(); $('promo-edit-id').value = '';
-  $('promo-type').value = 'percentage'; $('promo-value-label').textContent = 'DISCOUNT (%)';
+  $('promo-type').value = 'percentage'; $('promo-value-label').textContent = t('promo.val_perc');
   document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'percentage'));
   populatePromoRoomSelect(); $('promo-status-preview').style.display = 'none';
   $('promo-modal').classList.add('active');
@@ -997,7 +1015,7 @@ document.querySelectorAll('.promo-type-btn').forEach(btn => {
     const type = btn.dataset.type;
     $('promo-type').value = type;
     document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
-    $('promo-value-label').textContent = type === 'percentage' ? 'DISCOUNT (%)' : 'DISCOUNT AMOUNT (RP)';
+    $('promo-value-label').textContent = type === 'percentage' ? t('promo.val_perc') : t('promo.val_fixed');
   });
 });
 ['promo-start','promo-end'].forEach(id => $(id)?.addEventListener('change', updatePromoStatusPreview));

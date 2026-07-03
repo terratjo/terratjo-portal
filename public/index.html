@@ -523,12 +523,12 @@
             <form id="promo-form" autocomplete="off">
                 <input type="hidden" id="promo-edit-id">
                 <div class="form-group">
-                    <label>PROMO DESCRIPTION</label>
+                    <label data-i18n="promo.lbl_desc">PROMO DESCRIPTION</label>
                     <input type="text" id="promo-name" placeholder="e.g. Weekend Special, Early Bird Discount" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>DISCOUNT TYPE</label>
+                        <label data-i18n="promo.lbl_type">DISCOUNT TYPE</label>
                         <div class="promo-type-toggle" id="promo-type-toggle">
                             <button type="button" class="promo-type-btn active" data-type="percentage">% Percentage</button>
                             <button type="button" class="promo-type-btn" data-type="fixed">Rp Fixed</button>
@@ -536,23 +536,23 @@
                         <input type="hidden" id="promo-type" value="percentage">
                     </div>
                     <div class="form-group">
-                        <label id="promo-value-label">DISCOUNT (%)</label>
+                        <label id="promo-value-label" data-i18n="promo.lbl_val">DISCOUNT (%)</label>
                         <input type="number" id="promo-value" placeholder="e.g. 10" min="0" step="0.01" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>APPLY TO ROOM</label>
+                    <label data-i18n="promo.lbl_room">APPLY TO ROOM</label>
                     <select id="promo-room">
                         <option value="all">All Rooms</option>
                     </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>START DATE</label>
+                        <label data-i18n="promo.lbl_start">START DATE</label>
                         <input type="date" id="promo-start" required>
                     </div>
                     <div class="form-group">
-                        <label>END DATE</label>
+                        <label data-i18n="promo.lbl_end">END DATE</label>
                         <input type="date" id="promo-end" required>
                     </div>
                 </div>
