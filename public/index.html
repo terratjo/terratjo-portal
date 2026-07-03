@@ -250,7 +250,7 @@
                                 <input type="email" id="setting-email" value="info@terratjo.com">
                             </div>
                             <div class="form-group">
-                                <label>Contact Phone</label>
+                                <label data-i18n="set.phone">Contact Phone</label>
                                 <input type="text" id="setting-phone" value="+62 821-9999-1161">
                             </div>
                         </div>
@@ -260,7 +260,7 @@
                                 <input type="text" id="setting-bank-name" value="Bank Central Asia (BCA)">
                             </div>
                             <div class="form-group">
-                                <label>Account Name</label>
+                                <label data-i18n="set.acc_name">Account Name</label>
                                 <input type="text" id="setting-acc-name" value="Thomas Vialdo Resky Lamandau">
                             </div>
                         </div>
@@ -269,11 +269,11 @@
                             <input type="text" id="setting-acc-no" value="060-132-7499">
                         </div>
                         <div class="form-group">
-                            <label>Social / Website</label>
+                            <label data-i18n="set.web">Social / Website</label>
                             <input type="text" id="setting-social" value="@terratjo">
                         </div>
                         <div class="form-group">
-                            <label>Thank You Message (Invoice Footer)</label>
+                            <label data-i18n="set.msg">Thank You Message (Invoice Footer)</label>
                             <textarea id="setting-notes" rows="3">Thank you for choosing Terratjo Room at Taman Melati Apartment Yogyakarta</textarea>
                         </div>
                         <div class="form-actions">
@@ -281,7 +281,7 @@
                         </div>
                     </div>
                     <div class="settings-preview-box">
-                        <h4>Invoice Header Preview</h4>
+                        <h4 data-i18n="set.inv_prev">Invoice Header Preview</h4>
                         <div class="settings-inv-preview">
                             <div class="sip-logo logo-clickable" id="sip-logo-box" title="Click to change logo"><i data-lucide="home"></i></div>
                             <div>
@@ -577,10 +577,10 @@
             <form id="room-form" autocomplete="off">
                 <input type="hidden" id="room-edit-id">
                 <div class="form-group"><label data-i18n="inv.lbl_name">Room Name</label><input type="text" id="room-name" placeholder="e.g. Terratjo Room" required></div>
-                <div class="form-group"><label>Floor / Location</label><input type="text" id="room-location" placeholder="Taman Melati Apartment, Yogyakarta" required></div>
+                <div class="form-group"><label data-i18n="inv.lbl_loc">Floor / Location</label><input type="text" id="room-location" placeholder="Taman Melati Apartment, Yogyakarta" required></div>
                 <div class="form-row">
-                    <div class="form-group"><label>Capacity (Guests)</label><input type="number" id="room-capacity" value="2" min="1" required></div>
-                    <div class="form-group"><label>Default Rate/Night (Rp)</label><input type="number" id="room-rate" value="310000" required></div>
+                    <div class="form-group"><label data-i18n="inv.lbl_cap">Capacity (Guests)</label><input type="number" id="room-capacity" value="2" min="1" required></div>
+                    <div class="form-group"><label data-i18n="inv.lbl_rate">Default Rate/Night (Rp)</label><input type="number" id="room-rate" value="310000" required></div>
                 </div>
                 <div class="form-group"><label data-i18n="inv.lbl_desc">Description</label><input type="text" id="room-desc" placeholder="e.g. Cozy studio with modern amenities"></div>
                 <div class="form-actions">

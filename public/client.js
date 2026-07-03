@@ -53,7 +53,8 @@ const LANG = {
     'inv.lbl_name':'Room Name', 'inv.lbl_loc':'Location', 'inv.lbl_cap':'Capacity (Max Guests)', 'inv.lbl_rate':'Rate per night (Rp)', 'inv.lbl_desc':'Description', 'inv.save':'Save Room',
     'set.logo':'PROPERTY LOGO', 'set.logo_hint':'Click to upload logo', 'set.logo_sub':'PNG, JPG or SVG · Recommended 200x200px', 'set.logo_rm':'Remove Logo',
     'set.brand':'Brand / Property Name', 'set.tagline':'Tagline / Sub-brand', 'set.loc':'Location / Address (Top Bar)', 'set.inv_add':'Invoice Header Address',
-    'set.email':'Contact Email', 'set.phone':'Contact Phone / WA', 'set.web':'Website (Optional)', 'set.bank':'Bank Name', 'set.acc_no':'Account Number', 'set.acc_name':'Account Holder Name', 'set.terms':'Payment Instructions / Terms'
+    'set.email':'Contact Email', 'set.phone':'Contact Phone / WA', 'set.web':'Website (Optional)', 'set.bank':'Bank Name', 'set.acc_no':'Account Number', 'set.acc_name':'Account Holder Name', 'set.terms':'Payment Instructions / Terms',
+    'set.msg':'Thank You Message (Invoice Footer)', 'set.inv_prev':'Invoice Header Preview'
   
   },
   id: {
@@ -98,7 +99,8 @@ const LANG = {
     'inv.lbl_name':'Nama Kamar', 'inv.lbl_loc':'Lokasi', 'inv.lbl_cap':'Kapasitas (Maks Tamu)', 'inv.lbl_rate':'Tarif per malam (Rp)', 'inv.lbl_desc':'Deskripsi', 'inv.save':'Simpan Kamar',
     'set.logo':'LOGO PROPERTI', 'set.logo_hint':'Klik untuk mengunggah logo', 'set.logo_sub':'PNG, JPG, atau SVG · Disarankan 200x200px', 'set.logo_rm':'Hapus Logo',
     'set.brand':'Nama Merek / Properti', 'set.tagline':'Slogan / Sub-merek', 'set.loc':'Lokasi / Alamat (Top Bar)', 'set.inv_add':'Alamat Kop Faktur',
-    'set.email':'Email Kontak', 'set.phone':'Telepon / WA', 'set.web':'Situs Web (Opsional)', 'set.bank':'Nama Bank', 'set.acc_no':'Nomor Rekening', 'set.acc_name':'Nama Pemilik Rekening', 'set.terms':'Instruksi / Syarat Pembayaran'
+    'set.email':'Email Kontak', 'set.phone':'Telepon / WA', 'set.web':'Situs Web (Opsional)', 'set.bank':'Nama Bank', 'set.acc_no':'Nomor Rekening', 'set.acc_name':'Nama Pemilik Rekening', 'set.terms':'Instruksi / Syarat Pembayaran',
+    'set.msg':'Pesan Terima Kasih (Footer Faktur)', 'set.inv_prev':'Pratinjau Kop Faktur'
   
   }
 };
