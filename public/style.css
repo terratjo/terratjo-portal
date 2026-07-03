@@ -105,7 +105,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 /* Mobile-only elements – hidden on desktop */
 .mobile-filter-select{display:none;}
 .day-detail-sheet,.month-picker-sheet{display:none;}
-@media(max-width:768px){.day-detail-sheet,.month-picker-sheet{display:flex;flex-direction:column;}}
+@media(max-width:1000px){.day-detail-sheet,.month-picker-sheet{display:flex;flex-direction:column;}}
 
 /* ── DATA TABLE ────────────────────────────────────────── */
 .section-header-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
@@ -335,7 +335,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 /* ================================================================
    MOBILE RESPONSIVE
    ================================================================ */
-@media(max-width:768px){
+@media(max-width:1000px){
     body{overflow:auto;}
     .app-container{flex-direction:row;height:100vh;overflow:hidden;}
 
@@ -657,7 +657,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .promo-type-btn:hover:not(.active) { background:#f9fafb; }
 
 /* ── Mobile: Settings + Promo + Login ────────────────────────────── */
-@media(max-width:768px){
+@media(max-width:1000px){
   /* Settings container full width with padding */
   .settings-container{max-width:100%;padding:0 10px;}
   .settings-card{padding:16px;gap:16px;}
@@ -743,15 +743,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .lang-selector { display:flex; gap:6px; padding:4px 0; }
 .lang-selector .lang-btn { padding:5px 14px; border-radius:16px; background:var(--bg-light); color:var(--text-light); }
 .lang-selector .lang-btn.active { background:var(--primary); color:#fff; }
-@media(max-width:768px){
+@media(max-width:1000px){
   .lang-toggle { bottom:70px; right:16px; }
   .lang-btn { padding:6px 14px; font-size:11px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MOBILE VIEW — Comprehensive improvements (≤ 768px)
+   MOBILE VIEW — Comprehensive improvements (≤ 1000px)
    ═══════════════════════════════════════════════════════════ */
-@media(max-width:768px){
+@media(max-width:1000px){
 
   /* ── Body & Layout ─────────────────────────────────────── */
   body { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
@@ -1059,7 +1059,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   50%       { opacity: 0.55; transform: scale(0.97); }
 }
 /* Mobile: smaller pill */
-@media(max-width:768px) {
+@media(max-width:1000px) {
   .quota-cd { font-size: 11px; padding: 3px 8px; }
 }
 
@@ -1152,41 +1152,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     box-shadow: 0 0 0 3px rgba(255,200,35,.14) !important;
 }
 
-@media(max-width: 768px) {
+@media(max-width: 1000px) {
     .search-result-item { padding: 10px 12px; }
     .sr-title { font-size: 12.5px; white-space: nowrap; }
     .sr-room { font-size: 10.5px; }
     .sr-sub { font-size: 10.5px; }
 }
 
-/* ── IPAD PORTRAIT FIXES (769px - 1100px) ────────────────────────────────── */
-@media (min-width: 769px) and (max-width: 1100px) {
-    .top-bar {
-        height: auto;
-        min-height: 62px;
-        padding: 16px 24px;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-    .top-bar-left {
-        width: 100%;
-        justify-content: flex-start;
-    }
-    .top-bar-right {
-        width: 100%;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-    }
-    .page-title {
-        white-space: nowrap;
-        font-size: 18px;
-    }
-    .location-badge {
-        white-space: nowrap;
-    }
-    /* Allow calendar to scroll internally if screen is too short */
-    .calendar-container {
-        height: calc(100vh - 140px);
-        min-height: 600px;
-    }
-}

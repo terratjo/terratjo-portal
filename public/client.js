@@ -282,7 +282,7 @@ function navigate(pageId) {
   const p = $('page-' + pageId); if (p) p.classList.remove('hidden');
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const el = document.querySelector(`[data-page="${pageId}"]`); if (el) el.classList.add('active');
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth <= 1000) closeSidebar();
   prevPage = pageId;
 }
 // Search Logic
@@ -348,7 +348,7 @@ window.openSearchResult = function(id) {
   $('desktop-search-results').classList.add('hidden'); $('mobile-search-results').classList.add('hidden');
   refreshCurrentPage();
   openIPM(id);
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth <= 1000) closeSidebar();
 }
 function setMbnActive(id) {
   document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
@@ -388,7 +388,7 @@ function renderCalendar() {
   const total = first + dim; const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell past"><div class="day-number inactive">${i}</div></div>`;
   document.querySelectorAll('.day-cell[data-date]').forEach(cell => cell.addEventListener('click', () => {
-    if (window.innerWidth <= 768) { showDayDetail(cell.dataset.date); }
+    if (window.innerWidth <= 1000) { showDayDetail(cell.dataset.date); }
     else { openForm('booking', cell.dataset.date, null); }
   }));
 }
@@ -450,7 +450,7 @@ window.openMonthPicker=openMonthPicker; window.selectMpsYear=selectMpsYear;
 window.selectMpsMonth=selectMpsMonth; window.closeMonthPicker=closeMonthPicker;
 
 // Mobile tap on month text → open picker
-$('current-month-display')?.addEventListener('click', ()=>{ if(window.innerWidth<=768) openMonthPicker(); });
+$('current-month-display')?.addEventListener('click', ()=>{ if(window.innerWidth <= 1000) openMonthPicker(); });
 
 // Booking filter select sync (desktop tabs stay active)
 function applyBookingsFilter(val){
