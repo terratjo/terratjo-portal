@@ -45,6 +45,16 @@ const LANG = {
     'cal.su':'Su', 'cal.mo':'Mo', 'cal.tu':'Tu', 'cal.we':'We', 'cal.th':'Th', 'cal.fr':'Fr', 'cal.sa':'Sa',
     'btn.preview': 'Preview', 'btn.view': 'View'
   
+  ,    
+    'st.cancelled_exp':'Cancelled/Expired',
+    'tab.all':'All', 'tab.quotations':'Quotations', 'tab.invoices':'Invoices', 'tab.bookings':'Bookings',
+    'rep.trans_overview':'Transaction Overview',
+    'inv.title':'Rooms / Inventory', 'inv.add_room':'Add Room', 'inv.edit_room':'Edit Room',
+    'inv.lbl_name':'Room Name', 'inv.lbl_loc':'Location', 'inv.lbl_cap':'Capacity (Max Guests)', 'inv.lbl_rate':'Rate per night (Rp)', 'inv.lbl_desc':'Description', 'inv.save':'Save Room',
+    'set.logo':'PROPERTY LOGO', 'set.logo_hint':'Click to upload logo', 'set.logo_sub':'PNG, JPG or SVG · Recommended 200x200px', 'set.logo_rm':'Remove Logo',
+    'set.brand':'Brand / Property Name', 'set.tagline':'Tagline / Sub-brand', 'set.loc':'Location / Address (Top Bar)', 'set.inv_add':'Invoice Header Address',
+    'set.email':'Contact Email', 'set.phone':'Contact Phone / WA', 'set.web':'Website (Optional)', 'set.bank':'Bank Name', 'set.acc_no':'Account Number', 'set.acc_name':'Account Holder Name', 'set.terms':'Payment Instructions / Terms'
+  
   },
   id: {
     'nav.calendar':'Kalender','nav.bookings':'Semua Pemesanan','nav.invoices':'Faktur & Penawaran',
@@ -79,6 +89,16 @@ const LANG = {
     'cal.jan':'Januari', 'cal.feb':'Februari', 'cal.mar':'Maret', 'cal.apr':'April', 'cal.may':'Mei', 'cal.jun':'Juni', 'cal.jul':'Juli', 'cal.aug':'Agustus', 'cal.sep':'September', 'cal.oct':'Oktober', 'cal.nov':'November', 'cal.dec':'Desember',
     'cal.su':'Mg', 'cal.mo':'Sn', 'cal.tu':'Sl', 'cal.we':'Rb', 'cal.th':'Km', 'cal.fr':'Jm', 'cal.sa':'Sb',
     'btn.preview': 'Pratinjau', 'btn.view': 'Lihat'
+  
+  ,    
+    'st.cancelled_exp':'Dibatalkan/Kedaluwarsa',
+    'tab.all':'Semua', 'tab.quotations':'Penawaran', 'tab.invoices':'Faktur', 'tab.bookings':'Pemesanan',
+    'rep.trans_overview':'Ringkasan Transaksi',
+    'inv.title':'Kamar / Inventaris', 'inv.add_room':'Tambah Kamar', 'inv.edit_room':'Ubah Kamar',
+    'inv.lbl_name':'Nama Kamar', 'inv.lbl_loc':'Lokasi', 'inv.lbl_cap':'Kapasitas (Maks Tamu)', 'inv.lbl_rate':'Tarif per malam (Rp)', 'inv.lbl_desc':'Deskripsi', 'inv.save':'Simpan Kamar',
+    'set.logo':'LOGO PROPERTI', 'set.logo_hint':'Klik untuk mengunggah logo', 'set.logo_sub':'PNG, JPG, atau SVG · Disarankan 200x200px', 'set.logo_rm':'Hapus Logo',
+    'set.brand':'Nama Merek / Properti', 'set.tagline':'Slogan / Sub-merek', 'set.loc':'Lokasi / Alamat (Top Bar)', 'set.inv_add':'Alamat Kop Faktur',
+    'set.email':'Email Kontak', 'set.phone':'Telepon / WA', 'set.web':'Situs Web (Opsional)', 'set.bank':'Nama Bank', 'set.acc_no':'Nomor Rekening', 'set.acc_name':'Nama Pemilik Rekening', 'set.terms':'Instruksi / Syarat Pembayaran'
   
   }
 };
@@ -535,7 +555,7 @@ function renderInventory() {
 }
 window.openEditRoom = id => {
   const r = app.rooms.find(x => x.id === id); if (!r) return;
-  $('room-modal-title').textContent = 'Edit Room'; $('room-edit-id').value = id;
+  $('room-modal-title').textContent = t('inv.edit_room'); $('room-edit-id').value = id;
   $('room-name').value = r.name; $('room-location').value = r.location; $('room-capacity').value = r.capacity; $('room-rate').value = r.rate; $('room-desc').value = r.desc||'';
   $('room-modal').classList.add('active');
 };
@@ -544,7 +564,7 @@ window.deleteRoom = async id => {
   try { await api.del(`/rooms/${id}`); showToast('Room deleted.'); await loadData(); renderInventory(); }
   catch (e) { showToast('Delete failed: ' + e.message); }
 };
-$('btn-add-room')?.addEventListener('click', () => { $('room-modal-title').textContent = 'Add Room'; $('room-form').reset(); $('room-edit-id').value = ''; $('room-modal').classList.add('active'); });
+$('btn-add-room')?.addEventListener('click', () => { $('room-modal-title').textContent = t('inv.add_room'); $('room-form').reset(); $('room-edit-id').value = ''; $('room-modal').classList.add('active'); });
 $('room-form')?.addEventListener('submit', async e => {
   e.preventDefault();
   const data = { name:$('room-name').value, location:$('room-location').value, capacity:+$('room-capacity').value, rate:+$('room-rate').value, desc:$('room-desc').value };

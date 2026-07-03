@@ -99,15 +99,15 @@
                         <button class="btn-icon" id="btn-next-month"><i data-lucide="chevron-right"></i></button>
                     </div>
                     <div class="legend">
-                        <span class="legend-item"><span class="dot dot-confirmed"></span> Confirmed</span>
-                        <span class="legend-item"><span class="dot dot-awaiting"></span> Awaiting Payment</span>
-                        <span class="legend-item"><span class="dot dot-quotation"></span> Quotation</span>
-                        <span class="legend-item"><span class="dot dot-cancelled"></span> Cancelled/Expired</span>
+                        <span class="legend-item"><span class="dot dot-confirmed"></span> <span data-i18n="st.confirmed">Confirmed</span></span>
+                        <span class="legend-item"><span class="dot dot-awaiting"></span> <span data-i18n="st.awaiting">Awaiting Payment</span></span>
+                        <span class="legend-item"><span class="dot dot-quotation"></span> <span data-i18n="st.quotation">Quotation</span></span>
+                        <span class="legend-item"><span class="dot dot-cancelled"></span> <span data-i18n="st.cancelled_exp">Cancelled/Expired</span></span>
                     </div>
                 </div>
                 <div class="calendar-grid">
                     <div class="weekday-headers">
-                        <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                        <span data-i18n="cal.su">SUN</span><span data-i18n="cal.mo">MON</span><span data-i18n="cal.tu">TUE</span><span data-i18n="cal.we">WED</span><span data-i18n="cal.th">THU</span><span data-i18n="cal.fr">FRI</span><span data-i18n="cal.sa">SAT</span>
                     </div>
                     <div class="days-grid" id="days-grid"></div>
                 </div>
@@ -119,18 +119,18 @@
             <div class="section-container">
                 <div class="section-header-bar">
                     <div class="tab-group" id="bookings-tabs">
-                        <button class="tab-btn active" data-filter="all">All</button>
-                        <button class="tab-btn" data-filter="confirmed">Confirmed</button>
-                        <button class="tab-btn" data-filter="awaiting">Awaiting Payment</button>
-                        <button class="tab-btn" data-filter="quotation">Quotations</button>
-                        <button class="tab-btn" data-filter="cancelled">Cancelled / Expired</button>
+                        <button class="tab-btn active" data-filter="all" data-i18n="tab.all">All</button>
+                        <button class="tab-btn" data-filter="confirmed" data-i18n="st.confirmed">Confirmed</button>
+                        <button class="tab-btn" data-filter="awaiting" data-i18n="st.awaiting">Awaiting Payment</button>
+                        <button class="tab-btn" data-filter="quotation" data-i18n="tab.quotations">Quotations</button>
+                        <button class="tab-btn" data-filter="cancelled" data-i18n="st.cancelled_exp">Cancelled / Expired</button>
                     </div>
                     <select id="bookings-filter-select" class="mobile-filter-select" onchange="applyBookingsFilter(this.value)">
-                        <option value="all">All Bookings</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="awaiting">Awaiting Payment</option>
-                        <option value="quotation">Quotations</option>
-                        <option value="cancelled">Cancelled / Expired</option>
+                        <option value="all" data-i18n="nav.bookings">All Bookings</option>
+                        <option value="confirmed" data-i18n="st.confirmed">Confirmed</option>
+                        <option value="awaiting" data-i18n="st.awaiting">Awaiting Payment</option>
+                        <option value="quotation" data-i18n="tab.quotations">Quotations</option>
+                        <option value="cancelled" data-i18n="st.cancelled_exp">Cancelled / Expired</option>
                     </select>
                 </div>
                 <div class="data-table-wrapper">
@@ -151,9 +151,9 @@
             <div class="section-container">
                 <div class="section-header-bar">
                     <div class="tab-group" id="invoices-tabs">
-                        <button class="tab-btn active" data-filter="all">All</button>
-                        <button class="tab-btn" data-filter="invoice">Invoices</button>
-                        <button class="tab-btn" data-filter="quotation">Quotations</button>
+                        <button class="tab-btn active" data-filter="all" data-i18n="tab.all">All</button>
+                        <button class="tab-btn" data-filter="invoice" data-i18n="tab.invoices">Invoices</button>
+                        <button class="tab-btn" data-filter="quotation" data-i18n="tab.quotations">Quotations</button>
                     </div>
                 </div>
                 <div class="data-table-wrapper">
@@ -174,18 +174,18 @@
                 <div class="reports-stat-cards" id="reports-stat-cards"></div>
                 <div class="reports-table-card">
                     <div class="reports-table-header">
-                        <h3>Transaction Overview</h3>
+                        <h3 data-i18n="rep.trans_overview">Transaction Overview</h3>
                         <div class="tab-group" id="reports-tabs">
-                            <button class="tab-btn active" data-filter="all">All</button>
-                            <button class="tab-btn" data-filter="booking">Bookings</button>
-                            <button class="tab-btn" data-filter="quotation">Quotations</button>
+                            <button class="tab-btn active" data-filter="all" data-i18n="tab.all">All</button>
+                            <button class="tab-btn" data-filter="booking" data-i18n="tab.bookings">Bookings</button>
+                            <button class="tab-btn" data-filter="quotation" data-i18n="tab.quotations">Quotations</button>
                         </div>
                     </div>
                     <div class="data-table-wrapper">
                         <table class="data-table">
                             <thead><tr>
                                 <th>#</th><th data-i18n="th.guest">GUEST</th><th data-i18n="th.type">TYPE</th><th data-i18n="th.room">ROOM</th>
-                                <th>CHECK-IN</th><th>CHECK-OUT</th><th>NIGHTS</th>
+                                <th data-i18n="th.checkin">CHECK-IN</th><th data-i18n="th.checkout">CHECK-OUT</th><th data-i18n="th.nights">NIGHTS</th>
                                 <th data-i18n="th.rate">RATE/NIGHT</th><th data-i18n="th.total">TOTAL</th><th data-i18n="th.status">STATUS</th>
                             </tr></thead>
                             <tbody id="reports-tbody"></tbody>
@@ -200,8 +200,8 @@
         <main class="page-content hidden" id="page-inventory">
             <div class="section-container">
                 <div class="inventory-header">
-                    <h2>Rooms / Inventory</h2>
-                    <button class="btn btn-primary" id="btn-add-room"><i data-lucide="plus"></i> Add Room</button>
+                    <h2 data-i18n="inv.title">Rooms / Inventory</h2>
+                    <button class="btn btn-primary" id="btn-add-room"><i data-lucide="plus"></i> <span data-i18n="inv.add_room">Add Room</span></button>
                 </div>
                 <div class="rooms-list" id="rooms-list"></div>
             </div>
@@ -216,37 +216,37 @@
                     <div class="settings-form">
                         <!-- Logo Upload -->
                         <div class="logo-upload-group">
-                            <label>PROPERTY LOGO</label>
+                            <label data-i18n="set.logo">PROPERTY LOGO</label>
                             <div class="logo-upload-area logo-clickable" id="settings-logo-box" title="Click to upload logo">
                                 <div class="logo-upload-circle" id="settings-logo-circle"><i data-lucide="home"></i></div>
                                 <div class="logo-upload-hint">
-                                    <span class="logo-upload-hint-title">Click to upload logo</span>
-                                    <span class="logo-upload-hint-sub">PNG, JPG or SVG · Recommended 200×200px</span>
-                                    <button type="button" class="btn btn-outline btn-sm" id="btn-remove-logo" style="display:none" onclick="event.stopPropagation();removeLogo()">Remove Logo</button>
+                                    <span class="logo-upload-hint-title" data-i18n="set.logo_hint">Click to upload logo</span>
+                                    <span class="logo-upload-hint-sub" data-i18n="set.logo_sub">PNG, JPG or SVG · Recommended 200×200px</span>
+                                    <button type="button" class="btn btn-outline btn-sm" id="btn-remove-logo" style="display:none" onclick="event.stopPropagation();removeLogo()" data-i18n="set.logo_rm">Remove Logo</button>
                                 </div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Brand / Property Name</label>
+                                <label data-i18n="set.brand">Brand / Property Name</label>
                                 <input type="text" id="setting-brand" value="Terratjo Room">
                             </div>
                             <div class="form-group">
-                                <label>Tagline / Sub-brand</label>
+                                <label data-i18n="set.tagline">Tagline / Sub-brand</label>
                                 <input type="text" id="setting-tagline" value="Booking Portal">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Location / Address (Top Bar)</label>
+                            <label data-i18n="set.loc">Location / Address (Top Bar)</label>
                             <input type="text" id="setting-location" value="Taman Melati Apt - Yogyakarta">
                         </div>
                         <div class="form-group">
-                            <label>Invoice Header Address</label>
+                            <label data-i18n="set.inv_add">Invoice Header Address</label>
                             <input type="text" id="setting-inv-address" value="at Taman Melati Apartment Yogyakarta">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Contact Email</label>
+                                <label data-i18n="set.email">Contact Email</label>
                                 <input type="email" id="setting-email" value="info@terratjo.com">
                             </div>
                             <div class="form-group">
@@ -256,7 +256,7 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Bank Name</label>
+                                <label data-i18n="set.bank">Bank Name</label>
                                 <input type="text" id="setting-bank-name" value="Bank Central Asia (BCA)">
                             </div>
                             <div class="form-group">
@@ -265,7 +265,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Account Number</label>
+                            <label data-i18n="set.acc_no">Account Number</label>
                             <input type="text" id="setting-acc-no" value="060-132-7499">
                         </div>
                         <div class="form-group">
@@ -576,15 +576,15 @@
         <div class="modal-body">
             <form id="room-form" autocomplete="off">
                 <input type="hidden" id="room-edit-id">
-                <div class="form-group"><label>Room Name</label><input type="text" id="room-name" placeholder="e.g. Terratjo Room" required></div>
+                <div class="form-group"><label data-i18n="inv.lbl_name">Room Name</label><input type="text" id="room-name" placeholder="e.g. Terratjo Room" required></div>
                 <div class="form-group"><label>Floor / Location</label><input type="text" id="room-location" placeholder="Taman Melati Apartment, Yogyakarta" required></div>
                 <div class="form-row">
                     <div class="form-group"><label>Capacity (Guests)</label><input type="number" id="room-capacity" value="2" min="1" required></div>
                     <div class="form-group"><label>Default Rate/Night (Rp)</label><input type="number" id="room-rate" value="310000" required></div>
                 </div>
-                <div class="form-group"><label>Description</label><input type="text" id="room-desc" placeholder="e.g. Cozy studio with modern amenities"></div>
+                <div class="form-group"><label data-i18n="inv.lbl_desc">Description</label><input type="text" id="room-desc" placeholder="e.g. Cozy studio with modern amenities"></div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-outline" id="btn-cancel-room">Cancel</button>
+                    <button type="button" class="btn btn-outline" id="btn-cancel-room" data-i18n="btn.cancel">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Room</button>
                 </div>
             </form>
