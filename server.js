@@ -288,7 +288,7 @@ const mapBooking = row => ({
   promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||''
 });
 app.get('/api/bookings', auth, async (req, res) => {
-  const { rows } = await db.execute('SELECT * FROM bookings ORDER BY checkin DESC'); res.json(rows.map(mapBooking));
+  const { rows } = await db.execute('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(rows.map(mapBooking));
 });
 app.post('/api/bookings', auth, async (req, res) => {
   const { id,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
