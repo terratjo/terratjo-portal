@@ -2,31 +2,18 @@
 // Paste this entire file into Google Apps Script (Extensions > Apps Script)
 // Then: Deploy > New Deployment > Web App > Anyone > Deploy
 
-const SHEET_NAME = 'Bookings'; // Name of the sheet tab
+const SHEET_NAME = 'Bookings'; // Ensure your tab is named Bookings, or change this to match your sheet tab name
 const DRIVE_FOLDER_ID = '1Ls0zNyBmi8v8vVHAG_Nt99SlycTbg1VO'; // Drive folder for payment proofs
 
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // Create sheet if it doesn't exist
-    let sheet = ss.getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      sheet = ss.insertSheet(SHEET_NAME);
-      // Add headers (15 columns now)
-      sheet.getRange(1, 1, 1, 15).setValues([[
-        'Booking ID', 'Guest Name', 'Email', 'Phone', 'Address',
-        'Room', 'Check-in', 'Check-out', 'Guests',
-        'Total (IDR)', 'Status', 'Notes', 'Last Updated',
-        'Payment Info', 'Payment Proof'
-      ]]);
-      sheet.getRange(1, 1, 1, 15).setFontWeight('bold');
-      sheet.setFrozenRows(1);
-    }
+    let sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0]; // Fallback to first sheet if name mismatch
 
     // Process Payment Proof Upload
     let paymentProofUrl = '';
+    let uploadStatus = 'No file';
     if (data.paymentProofBase64) {
       try {
         const rootFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
@@ -52,63 +39,99 @@ function doPost(e) {
           else if (mimeType.includes('pdf')) ext = '.pdf';
         }
         
-        const blob = Utilities.newBlob(Utilities.base64Decode(b64), mimeType, data.id + ext);
+        const blob = Utilities.newBlob(Utilities.base64Decode(b64), mimeType, (data.guestName || data.id) + ext);
         const file = monthFolder.createFile(blob);
-        // Make the file readable by anyone with the link (optional, depends on your preference)
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         paymentProofUrl = file.getUrl();
+        uploadStatus = 'Success';
       } catch (err) {
+        uploadStatus = 'Error: ' + err.message;
         Logger.log('Drive Upload Error: ' + err.message);
-        // Continue even if upload fails
       }
     }
 
-    const row = [
-      data.id || '',
-      data.guestName || '',
-      data.guestEmail || '',
-      data.phone || '',
-      data.address || '',
-      data.room || '',
-      data.checkin || '',
-      data.checkout || '',
-      data.numGuests || 1,
-      data.total || 0,
-      data.status || '',
-      data.notes || '',
-      new Date().toLocaleString('id-ID'),
-      data.paymentInfo || '',
-      paymentProofUrl || ''
-    ];
+    // Dynamic Column Mapping
+    const lastCol = sheet.getLastColumn() || 15;
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => h.toString().trim().toUpperCase());
+    
+    // Create an empty row array
+    const row = new Array(lastCol).fill('');
+    
+    // Helper to set value if column exists
+    const setCol = (name, value) => {
+      const idx = headers.indexOf(name.toUpperCase());
+      if (idx !== -1) row[idx] = value;
+    };
 
-    if (data.action === 'create') {
-      sheet.appendRow(row);
-    } else if (data.action === 'update' || data.action === 'cancel' || data.action === 'confirmed') {
-      // Find existing row by Booking ID and update it
-      const values = sheet.getDataRange().getValues();
-      let found = false;
+    // Map all fields based on the user's specific columns
+    setCol('Booking ID', data.id || '');
+    setCol('Submission time', new Date().toLocaleString('id-ID'));
+    setCol('FULL NAME', data.guestName || '');
+    setCol('ADDRESS', data.address || '');
+    setCol('OCCUPANTS', data.numGuests || 1);
+    setCol('ROOM TYPE', data.room || '');
+    setCol('CHECK-IN DATE', data.checkin || '');
+    setCol('CHECK-OUT DATE', data.checkout || '');
+    setCol('EMAIL', data.guestEmail || '');
+    setCol('PHONE NUMBER', data.phone || '');
+    setCol('Special Notes', data.notes || '');
+    setCol('Reservation Details', data.reservationDetails || '');
+    setCol('Additional Fee', data.additionalFee || 0);
+    setCol('PROMO', data.promo || '');
+    setCol('Payment Info', data.paymentInfo || '');
+    setCol('Payment Proof', paymentProofUrl || '');
+    setCol('Total (IDR)', data.total || 0);
+    setCol('Status', data.status || '');
+
+    // Finding the existing row to update
+    const values = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+
+    // Try finding by Booking ID first (if it exists)
+    const idIdx = headers.indexOf('BOOKING ID');
+    if (idIdx !== -1) {
       for (let i = 1; i < values.length; i++) {
-        if (values[i][0] === data.id) {
-          // If the row exists, preserve existing Payment Info/Proof if we are not passing new ones
-          if (!data.paymentInfo && values[i][13]) row[13] = values[i][13];
-          if (!paymentProofUrl && values[i][14]) row[14] = values[i][14];
-
-          sheet.getRange(i + 1, 1, 1, 15).setValues([row]);
-          found = true;
-          break;
+        if (values[i][idIdx] === data.id) { rowIndex = i; break; }
+      }
+    }
+    
+    // If not found, try matching FULL NAME + CHECK-IN DATE
+    if (rowIndex === -1) {
+      const nameIdx = headers.indexOf('FULL NAME');
+      const ciIdx = headers.indexOf('CHECK-IN DATE');
+      if (nameIdx !== -1 && ciIdx !== -1) {
+        for (let i = 1; i < values.length; i++) {
+          if (values[i][nameIdx] === data.guestName && values[i][ciIdx] === data.checkin) {
+            rowIndex = i; break;
+          }
         }
       }
-      // If not found, add as new row
-      if (!found) sheet.appendRow(row);
+    }
+
+    if (rowIndex !== -1) {
+      // Row exists, update it!
+      // Preserve old Payment Info / Proof if no new one was provided
+      const piIdx = headers.indexOf('PAYMENT INFO');
+      const ppIdx = headers.indexOf('PAYMENT PROOF');
+      if (piIdx !== -1 && !data.paymentInfo && values[rowIndex][piIdx]) row[piIdx] = values[rowIndex][piIdx];
+      if (ppIdx !== -1 && !paymentProofUrl && values[rowIndex][ppIdx]) row[ppIdx] = values[rowIndex][ppIdx];
+      
+      sheet.getRange(rowIndex + 1, 1, 1, lastCol).setValues([row]);
+    } else {
+      // Not found, append a new row
+      // Remove trailing empty elements just in case
+      let cleanRow = [...row];
+      while(cleanRow.length > 0 && cleanRow[cleanRow.length-1] === '') { cleanRow.pop(); }
+      sheet.appendRow(cleanRow);
     }
 
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, paymentProofUrl }))
+      .createTextOutput(JSON.stringify({ success: true, paymentProofUrl, uploadStatus }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
     return ContentService
-      .createTextOutput(JSON.stringify({ error: err.message }))
+      .createTextOutput(JSON.stringify({ error: err.message, stack: err.stack }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
