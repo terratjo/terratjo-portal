@@ -34,7 +34,7 @@ const LANG = {
     'form.rate':'RATE / NIGHT (RP)','form.cleaning':'CLEANING FEE (RP)',
     'form.deposit':'DEPOSIT (RP)','form.tax':'TAX (%)','form.notes':'NOTES / SPECIAL REQUESTS',
     'fs.rate':'Rate per night','fs.night':'night','fs.accommodation':'Accommodation',
-    'fs.cleaning':'Cleaning fee','fs.deposit':'Deposit','fs.tax':'Tax','fs.total':'Total',
+    'fs.cleaning':'Cleaning fee','fs.additional':'Additional fee','fs.deposit':'Deposit','fs.tax':'Tax','fs.total':'Total',
       
     'th.guest':'GUEST', 'th.room':'ROOM', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'NIGHTS', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TYPE', 'th.dates':'DATES', 'th.rate':'RATE/NIGHT', 'th.desc':'Description', 'th.qty':'Quantity', 'th.amount':'Amount',
     'lbl.night':'night', 'lbl.nights':'nights', 'lbl.no_bookings':'No bookings found.', 'lbl.no_documents':'No documents found.',
@@ -89,7 +89,7 @@ const LANG = {
     'form.rate':'TARIF / MALAM (RP)','form.cleaning':'BIAYA KEBERSIHAN (RP)',
     'form.deposit':'DEPOSIT (RP)','form.tax':'PAJAK (%)','form.notes':'CATATAN / PERMINTAAN KHUSUS',
     'fs.rate':'Tarif per malam','fs.night':'malam','fs.accommodation':'Akomodasi',
-    'fs.cleaning':'Biaya kebersihan','fs.deposit':'Deposit','fs.tax':'Pajak','fs.total':'Total',
+    'fs.cleaning':'Biaya kebersihan','fs.additional':'Biaya tambahan','fs.deposit':'Deposit','fs.tax':'Pajak','fs.total':'Total',
       
     'th.guest':'TAMU', 'th.room':'KAMAR', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'MALAM', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TIPE', 'th.dates':'TANGGAL', 'th.rate':'TARIF/MALAM', 'th.desc':'Deskripsi', 'th.qty':'Jumlah', 'th.amount':'Jumlah',
     'lbl.night':'malam', 'lbl.nights':'malam', 'lbl.no_bookings':'Tidak ada pemesanan ditemukan.', 'lbl.no_documents':'Tidak ada dokumen ditemukan.',
@@ -640,15 +640,16 @@ function populatePromoSelect(roomId) {
 }
 function calcFormSummary() {
   const ci = $('form-checkin').value, co = $('form-checkout').value;
-  const rate = +$('form-price').value||0, cleaning = +$('form-cleaning').value||0, deposit = +$('form-deposit').value||0, taxPct = +$('form-tax').value||0;
+  const rate = +$('form-price').value||0, cleaning = +$('form-cleaning').value||0, deposit = +$('form-deposit').value||0, taxPct = +$('form-tax').value||0, addFee = +$('form-additional').value||0;
   const n = (ci && co) ? nightsCount(ci, co) : 1;
-  const acc = n * rate, taxAmt = Math.round((acc + cleaning) * taxPct / 100);
+  const acc = n * rate, taxAmt = Math.round((acc + cleaning + addFee) * taxPct / 100);
   const promoId = $('form-promo')?.value;
   const promo = promoId ? app.promos.find(p => p.id === promoId) : null;
   const discAmt = calcPromoDiscount(promo, acc);
-  const total = acc + cleaning + deposit + taxAmt - discAmt;
+  const total = acc + cleaning + deposit + taxAmt + addFee - discAmt;
   $('fs-rate').textContent = idr(rate); $('fs-nights-label').textContent = n + ' night' + (n>1?'s':''); $('fs-nights-count').textContent = n;
   $('fs-accommodation').textContent = idr(acc); $('fs-cleaning').textContent = cleaning>0?idr(cleaning):'—';
+  if($('fs-additional')) $('fs-additional').textContent = addFee>0?idr(addFee):'—';
   $('fs-deposit').textContent = deposit>0?idr(deposit):'—'; $('fs-tax').textContent = taxPct>0?idr(taxAmt):'—';
   const promoRow = $('fs-promo-row'); if (promoRow) promoRow.style.display = discAmt > 0 ? '' : 'none';
   const promoEl = $('fs-promo'); if (promoEl) promoEl.textContent = discAmt > 0 ? '-' + idr(discAmt) : '—';
@@ -674,7 +675,7 @@ function openForm(type, dateStr, prefillId) {
   }
   currentFormAction = type; calcFormSummary(); $('form-modal').classList.add('active');
 }
-['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
+['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax','form-additional'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
 $('form-promo')?.addEventListener('change', calcFormSummary);
 $('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value); populatePromoSelect($('form-room').value); calcFormSummary(); });
 $('btn-create-booking-form')?.addEventListener('click', () => { lastAction = 'booking'; });
