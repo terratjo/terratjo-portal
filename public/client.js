@@ -322,6 +322,7 @@ document.addEventListener('click', e => {
     }
   } catch(err) { console.error(err); }
 });
+function renderGlobalSearchResults() {
   const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
   if (!dDesk || !dMob) return;
   const showDesktopDropdown = ['calendar', 'inventory', 'settings'].includes(prevPage);
