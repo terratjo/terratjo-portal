@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
   if (_cachedLogo && _logoImg) {
     _logoImg.src = _cachedLogo; // instant — no flash
+    _logoImg.style.opacity = '1';
   } else if (_logoImg) {
     _logoImg.style.opacity = '0'; // hide wrong static logo until correct one loads
   }
@@ -253,8 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (d.logo) {
       localStorage.setItem('terratjo_logo_cache', d.logo);
       if (_logoImg) { _logoImg.src = d.logo; _logoImg.style.opacity = '1'; }
-    } else if (_logoImg) { _logoImg.style.opacity = '1'; }
-  }).catch(() => { if (_logoImg) _logoImg.style.opacity = '1'; });
+    } else if (_logoImg) { 
+      _logoImg.src = '/logo.png'; 
+      _logoImg.style.opacity = '1'; 
+    }
+  }).catch(() => { if (_logoImg) { _logoImg.src = '/logo.png'; _logoImg.style.opacity = '1'; } });
 
   if (token) initApp(); else showLogin();
 });
@@ -318,11 +322,14 @@ document.addEventListener('click', e => {
     }
   } catch(err) { console.error(err); }
 });
-function renderGlobalSearchResults() {
   const dDesk = $('desktop-search-results'), dMob = $('mobile-search-results');
   if (!dDesk || !dMob) return;
-  const showDropdown = ['calendar', 'inventory', 'settings'].includes(prevPage);
-  if (!_currentSearch || !showDropdown) { dDesk.classList.add('hidden'); dMob.classList.add('hidden'); return; }
+  const showDesktopDropdown = ['calendar', 'inventory', 'settings'].includes(prevPage);
+  if (!_currentSearch) { dDesk.classList.add('hidden'); dMob.classList.add('hidden'); return; }
+  
+  // Only hide desktop dropdown if we are on a list view (which handles search itself)
+  if (!showDesktopDropdown) { dDesk.classList.add('hidden'); }
+  
   const matches = app.bookings.filter(b => (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch));
   let html = '';
   if (matches.length === 0) { html = '<div class="sr-empty">No bookings found for "'+_currentSearch+'"</div>'; }
@@ -338,8 +345,16 @@ function renderGlobalSearchResults() {
       </div>`;
     });
   }
+  
+  // Always update innerHTML
   dDesk.innerHTML = html; dMob.innerHTML = html;
-  dDesk.classList.remove('hidden'); dMob.classList.remove('hidden');
+  
+  // Desktop dropdown visibility
+  if (showDesktopDropdown) dDesk.classList.remove('hidden');
+  
+  // Mobile dropdown ALWAYS visible when searching (because it's in the sidebar overlay)
+  dMob.classList.remove('hidden');
+  
   lucide.createIcons();
 }
 window.openSearchResult = function(id) {
