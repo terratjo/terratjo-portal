@@ -711,7 +711,8 @@ window.openIPM = function(id) {
   const docEl = $('ipm-doc-type'); docEl.textContent = docLabel;
   docEl.style.color = b.status==='cancelled' ? '#b91c1c' : (isExpiredQ ? '#6b7280' : 'var(--primary)');
   $('ipm-doc-id').textContent = b.id;
-  const docDateStr = b.created_at ? shortDate(b.created_at.split(' ')[0]) : shortDate(fmt(today));
+  const jkt = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const docDateStr = shortDate(`${jkt.getFullYear()}-${String(jkt.getMonth()+1).padStart(2,'0')}-${String(jkt.getDate()).padStart(2,'0')}`);
   $('ipm-doc-date').textContent = 'Date: ' + docDateStr;
   const stamp = $('ipm-cancelled-stamp'); b.status==='cancelled'?stamp.classList.remove('hidden'):stamp.classList.add('hidden');
   $('ipm-f-name').value = b.guestName||''; $('ipm-f-addr').value = b.address||''; $('ipm-meta-contact').textContent = (b.guestEmail||'') + (b.phone?' · '+b.phone:'');
