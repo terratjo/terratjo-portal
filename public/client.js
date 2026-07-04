@@ -775,6 +775,8 @@ $('ipm-btn-convert')?.addEventListener('click', async () => {
   $('payment-booking-id').value = b.id;
   $('payment-method').value = 'Transfer BCA';
   $('payment-proof-file').value = '';
+  const p = $('payment-drop-area').querySelector('p');
+  p.innerHTML = `Drag & drop a file or <span>browse</span>`;
   $('payment-modal').classList.add('active');
 
   
@@ -1074,5 +1076,15 @@ $('btn-confirm-payment')?.addEventListener('click', async () => {
   } finally {
     confirmBtn.disabled = false;
     confirmBtn.textContent = 'Confirm as Paid';
+  }
+});
+
+
+$('payment-proof-file')?.addEventListener('change', function() {
+  const p = $('payment-drop-area').querySelector('p');
+  if (this.files && this.files.length > 0) {
+      p.innerHTML = `Selected: <b>${this.files[0].name}</b>`;
+  } else {
+      p.innerHTML = `Drag & drop a file or <span>browse</span>`;
   }
 });

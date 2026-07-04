@@ -525,18 +525,23 @@
         <div class="modal-body">
             <input type="hidden" id="payment-booking-id">
             <div class="form-group">
-                <label>Payment Method</label>
+                <label style="text-transform:uppercase;">Payment Method</label>
                 <select id="payment-method">
                     <option value="Transfer BCA">Transfer BCA</option>
                     <option value="Cash">Cash</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Payment Proof (Optional)</label>
-                <input type="file" id="payment-proof-file" accept="image/*,application/pdf">
+                <label style="text-transform:uppercase;">Payment Proof (Optional)</label>
+                <div class="file-drop-area" id="payment-drop-area">
+                    <i data-lucide="folder"></i>
+                    <p>Drag & drop a file or <span>browse</span></p>
+                    <small>Max file size is 20 MB</small>
+                    <input type="file" id="payment-proof-file" accept="image/*,application/pdf" class="file-input-hidden">
+                </div>
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="justify-content: center; gap: 12px;">
             <button class="btn btn-secondary" id="btn-cancel-payment">Cancel</button>
             <button class="btn btn-primary" id="btn-confirm-payment">Confirm as Paid</button>
         </div>
