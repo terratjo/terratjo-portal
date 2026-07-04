@@ -169,7 +169,7 @@ async function syncToSheets(action, booking) {
       body: JSON.stringify({ action, ...booking })
     });
     const result = await res.json();
-    console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`);
+    console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`, JSON.stringify(result, null, 2));
     return result;
   } catch (e) {
     console.warn('Google Sheets sync failed (non-critical):', e.message);
