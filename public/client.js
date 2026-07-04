@@ -794,9 +794,10 @@ async function initApp() {
   } catch (e) { console.error('Init failed:', e); showToast('Failed to load data. Check backend.'); logout(); }
 }
 function updateTopBar() {
-  if ($('topbar-brand')) $('topbar-brand').textContent = (app.settings.brand||'Terratjo') + ' Booking Portal';
-  if ($('topbar-location')) $('topbar-location').textContent = app.settings.location||'';
+  if ($('tb-brand')) $('tb-brand').textContent = (app.settings.brand||'Terratjo') + ' ' + (app.settings.tagline||'Booking Portal');
+  if ($('tb-loc')) $('tb-loc').textContent = app.settings.location||'';
   if ($('sidebar-brand-name')) $('sidebar-brand-name').textContent = app.settings.brand||'Terratjo Room';
+  if ($('sidebar-tagline')) $('sidebar-tagline').textContent = app.settings.tagline||'Booking Portal';
 }
 
 // ── Logo Upload ───────────────────────────────────────────────────
