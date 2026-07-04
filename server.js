@@ -158,8 +158,7 @@ const auth = (req, res, next) => {
 };
 
 // ── Google Sheets Sync ────────────────────────────────────────────
-const SHEETS_WEBHOOK = process.env.SHEETS_WEBHOOK_URL ||
-  'https://script.google.com/macros/s/AKfycbxDYikl_WDSKKqgTkdQ9-I4smcR2hyqcCEYwaSbHTDC184wLNiqyGlnv-7RHchxOIa23A/exec';
+const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxDYikl_WDSKKqgTkdQ9-I4smcR2hyqcCEYwaSbHTDC184wLNiqyGlnv-7RHchxOIa23A/exec';
 async function syncToSheets(action, booking) {
   if (!SHEETS_WEBHOOK) return null; // Skip if not configured
   try {
