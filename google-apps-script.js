@@ -30,7 +30,7 @@ function doPost(e) {
     if (data.paymentProofBase64) {
       try {
         const rootFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-        const monthName = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "MMMM yyyy");
+        const monthName = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "MMMM").toUpperCase(); // e.g. "JULY"
         
         let monthFolders = rootFolder.getFoldersByName(monthName);
         let monthFolder;
