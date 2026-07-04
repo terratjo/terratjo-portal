@@ -5,6 +5,13 @@
 const SHEET_NAME = 'Bookings'; // Ensure your tab is named Bookings, or change this to match your sheet tab name
 const DRIVE_FOLDER_ID = '1Ls0zNyBmi8v8vVHAG_Nt99SlycTbg1VO'; // Drive folder for payment proofs
 
+// Run this function ONCE from the editor to grant permissions!
+function install() {
+  SpreadsheetApp.getActiveSpreadsheet();
+  DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  Logger.log("Permissions granted successfully!");
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -120,11 +127,12 @@ function doPost(e) {
       
       sheet.getRange(rowIndex + 1, 1, 1, lastCol).setValues([row]);
     } else {
-      // Not found, append a new row
-      // Remove trailing empty elements just in case
-      let cleanRow = [...row];
-      while(cleanRow.length > 0 && cleanRow[cleanRow.length-1] === '') { cleanRow.pop(); }
-      sheet.appendRow(cleanRow);
+      // Not found, append a new row but avoid data validation pushing it to row 1000
+      const colA = sheet.getRange(1, 1, sheet.getMaxRows(), 1).getValues();
+      let emptyRowIdx = colA.findIndex(r => !r[0] || r[0].toString().trim() === '') + 1;
+      if (emptyRowIdx <= 1) emptyRowIdx = sheet.getLastRow() + 1; // Fallback
+      
+      sheet.getRange(emptyRowIdx, 1, 1, lastCol).setValues([row]);
     }
 
     return ContentService
