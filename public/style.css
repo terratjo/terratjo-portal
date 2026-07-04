@@ -21,8 +21,8 @@
     --confirmed:#16a34a; --awaiting:#d97706; --quotation:#2563eb; --cancelled:#dc2626;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-dark);height:100vh;overflow:hidden;}
-.app-container{display:flex;height:100vh;}
+body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-dark);height:100dvh;overflow:hidden;}
+.app-container{display:flex;height:100dvh;}
 
 /* ── SIDEBAR ───────────────────────────────────────────── */
 .sidebar{width:240px;min-width:240px;background:var(--bg-dark);display:flex;flex-direction:column;border-right:1px solid var(--border-dark);}
@@ -345,7 +345,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
    ================================================================ */
 @media(max-width:1000px){
     body{overflow:auto;}
-    .app-container{flex-direction:row;height:100vh;overflow:hidden;}
+    .app-container{flex-direction:row;height:100dvh;overflow:hidden;}
+
 
     /* Sidebar */
     .sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:500;width:240px;min-width:240px;transition:left .28s ease;height:100%;}
@@ -371,7 +372,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 
     /* ── CALENDAR HEADER (mobile) ─────────────────────── */
     .legend{display:none!important;}
-    .calendar-container{gap:6px;height:calc(100vh - 50px - 58px);overflow:hidden;}
+    .calendar-container{gap:6px;height:calc(100dvh - 50px - 58px);overflow:hidden;}
     .calendar-header{flex-direction:row;align-items:center;justify-content:space-between;padding:0 2px;flex-wrap:nowrap;}
 
     /* Hide prev/next arrows — replaced by tap-to-pick */

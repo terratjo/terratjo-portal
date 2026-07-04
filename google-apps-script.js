@@ -65,6 +65,7 @@ function doPost(e) {
 
     // Map all fields based on the user's specific columns
     setCol('Booking ID', data.id || '');
+    setCol('Booking Code', data.id || '');
     setCol('Submission time', new Date().toLocaleString('id-ID'));
     setCol('FULL NAME', data.guestName || '');
     setCol('ADDRESS', data.address || '');
@@ -81,6 +82,7 @@ function doPost(e) {
     setCol('Payment Info', data.paymentInfo || '');
     setCol('Payment Proof', paymentProofUrl || '');
     setCol('Total (IDR)', data.total || 0);
+    setCol('TOTAL PAYMENT', data.total || 0);
     setCol('Status', data.status || '');
 
     // Finding the existing row to update
