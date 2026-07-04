@@ -1214,3 +1214,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     opacity: 0;
     cursor: pointer;
 }
+
+@media (max-width: 1000px) {
+  #payment-modal.modal-overlay {
+    align-items: center !important;
+    padding: 20px !important;
+  }
+  #payment-modal .modal {
+    border-radius: var(--radius-xl) !important;
+    margin-bottom: 0 !important;
+    max-height: 90vh !important;
+  }
+}
