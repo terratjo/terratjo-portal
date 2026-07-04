@@ -9,6 +9,7 @@ const DRIVE_FOLDER_ID = '1Ls0zNyBmi8v8vVHAG_Nt99SlycTbg1VO'; // Drive folder for
 function install() {
   SpreadsheetApp.getActiveSpreadsheet();
   DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  DriveApp.createFile('dummy', 'dummy'); // Force full Drive permissions
   Logger.log("Permissions granted successfully!");
 }
 
@@ -24,7 +25,8 @@ function doPost(e) {
     if (data.paymentProofBase64) {
       try {
         const rootFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-        const monthName = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "MMMM").toUpperCase(); // e.g. "JULY"
+        const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        const monthName = monthNames[new Date().getMonth()];
         
         let monthFolders = rootFolder.getFoldersByName(monthName);
         let monthFolder;
@@ -136,7 +138,18 @@ function doPost(e) {
     }
 
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, paymentProofUrl, uploadStatus }))
+      .createTextOutput(JSON.stringify({ 
+        success: true, 
+        paymentProofUrl, 
+        uploadStatus,
+        debug: {
+          sheetUrl: ss.getUrl(),
+          sheetName: sheet.getName(),
+          rowIndex,
+          emptyRowIdx: typeof emptyRowIdx !== 'undefined' ? emptyRowIdx : -1,
+          rowWritten: row
+        }
+      }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
