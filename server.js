@@ -54,6 +54,8 @@ async function seedData() {
   // Migration: add source (reservation platform) to bookings
   await db.execute('ALTER TABLE bookings ADD COLUMN source TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN additional_fee REAL DEFAULT 0').catch(() => {});
+    await db.execute('ALTER TABLE bookings ADD COLUMN payment_method TEXT').catch(() => {});
+  await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
   // Migration: update existing BK- booking IDs to TJ-
   await db.execute("UPDATE bookings SET id = REPLACE(id, 'BK-', 'TJ-') WHERE id LIKE 'BK-%'").catch(() => {});
   // Migration: rename 'admin' to 'terratjo' if it exists
@@ -159,16 +161,19 @@ const auth = (req, res, next) => {
 const SHEETS_WEBHOOK = process.env.SHEETS_WEBHOOK_URL ||
   'https://script.google.com/macros/s/AKfycbxYV1FxIX1xLNpEGiFbYxI7QiGtmK4eJbbgzVt5xdT5ZQawzwgz8S26wxHI5_zYAz7yJA/exec';
 async function syncToSheets(action, booking) {
-  if (!SHEETS_WEBHOOK) return; // Skip if not configured
+  if (!SHEETS_WEBHOOK) return null; // Skip if not configured
   try {
-    await fetch(SHEETS_WEBHOOK, {
+    const res = await fetch(SHEETS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...booking })
     });
+    const result = await res.json();
     console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`);
+    return result;
   } catch (e) {
     console.warn('Google Sheets sync failed (non-critical):', e.message);
+    return null;
   }
 }
 
@@ -279,6 +284,7 @@ const mapBooking = row => ({
   checkoutTime:row.checkout_time, rate:Number(row.rate), cleaningFee:Number(row.cleaning_fee),
   additionalFee:Number(row.additional_fee),
   deposit:Number(row.deposit), tax:Number(row.tax), status:row.status, notes:row.notes,
+  paymentMethod:row.payment_method||'', paymentProofUrl:row.payment_proof_url||'',
   promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||''
 });
 app.get('/api/bookings', auth, async (req, res) => {
@@ -303,16 +309,19 @@ app.post('/api/bookings', auth, async (req, res) => {
 });
 app.put('/api/bookings/:id', auth, async (req, res) => {
   const { type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
-          checkinTime,checkoutTime,rate,cleaningFee,additionalFee,deposit,tax,status,notes,promoId,source } = req.body;
+          checkinTime,checkoutTime,rate,cleaningFee,additionalFee,deposit,tax,status,notes,promoId,source,paymentMethod,paymentProofBase64 } = req.body;
   const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
   const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0);
-  const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,additional_fee=?,deposit=?,tax=?,status=?,notes=?,promo_id=?,source=? WHERE id=?`,
-    args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',req.params.id] });
+  const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,additional_fee=?,deposit=?,tax=?,status=?,notes=?,promo_id=?,source=?,payment_method=? WHERE id=?`,
+    args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',paymentMethod||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   if (status === 'confirmed') {
     let promoLabel = '';
     if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
-    syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0});
+    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
+      if (syncResult && syncResult.paymentProofUrl) {
+        await db.execute({ sql: 'UPDATE bookings SET payment_proof_url=? WHERE id=?', args: [syncResult.paymentProofUrl, req.params.id] });
+      }
   }
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });

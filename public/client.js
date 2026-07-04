@@ -770,12 +770,13 @@ $('ipm-btn-email')?.addEventListener('click', () => {
 $('ipm-btn-print')?.addEventListener('click', () => printInvoice());
 $('ipm-btn-convert')?.addEventListener('click', async () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
-  if (!confirm('Mark this quotation as paid and convert to Invoice?')) return;
-  try {
-    await api.put(`/bookings/${b.id}`, { ...b, type:'invoice', status:'confirmed' });
-    showToast('Converted to Invoice ✓');
-    await loadData(); openIPM(b.id); refreshCurrentPage();
-  } catch(e) { showToast('Conversion failed: ' + e.message); }
+  
+  $('payment-booking-id').value = b.id;
+  $('payment-method').value = 'Transfer BCA';
+  $('payment-proof-file').value = '';
+  $('payment-modal').classList.add('active');
+
+  
 });
 
 // ── Data Load & Init ──────────────────────────────────────────────
@@ -1035,4 +1036,42 @@ $('promo-form')?.addEventListener('submit', async e => {
 ['btn-close-promo-modal','btn-cancel-promo'].forEach(id => $(id)?.addEventListener('click', () => $('promo-modal').classList.remove('active')));
 window.addEventListener('error', function(e) {
   alert('Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+
+
+$('btn-close-payment-modal')?.addEventListener('click', () => $('payment-modal').classList.remove('active'));
+$('btn-cancel-payment')?.addEventListener('click', () => $('payment-modal').classList.remove('active'));
+
+$('btn-confirm-payment')?.addEventListener('click', async () => {
+  const bId = $('payment-booking-id').value;
+  const b = app.bookings.find(x => x.id === bId); if (!b) return;
+  const paymentMethod = $('payment-method').value;
+  const fileInput = $('payment-proof-file');
+  let paymentProofBase64 = null;
+
+  const confirmBtn = $('btn-confirm-payment');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Processing...';
+
+  try {
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      paymentProofBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    await api.put(`/bookings/${b.id}`, { ...b, type:'invoice', status:'confirmed', paymentMethod, paymentProofBase64 });
+    showToast('Converted to Invoice ✓');
+    $('payment-modal').classList.remove('active');
+    await loadData(); openIPM(b.id); refreshCurrentPage();
+  } catch(e) { 
+    showToast('Conversion failed: ' + e.message); 
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirm as Paid';
+  }
 });
