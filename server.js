@@ -294,16 +294,16 @@ app.post('/api/bookings', auth, async (req, res) => {
           checkinTime,checkoutTime,rate,cleaningFee,additionalFee,deposit,tax,status,notes,promoId,source } = req.body;
   const idGen = id || `TJ-${String(Date.now()).slice(-6)}`;
   const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
-  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0);
+  let discAmt = 0;
+  if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) { discAmt = pr[0].type==='percentage' ? (nights*(Number(rate)||0))*(Number(pr[0].value)/100) : Number(pr[0].value); } }
+  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0) + (Number(tax)||0) - discAmt;
   try {
     await db.execute({ sql:`INSERT INTO bookings (id,type,guest_name,guest_email,phone,address,num_guests,room_id,checkin,checkout,checkin_time,checkout_time,rate,cleaning_fee,additional_fee,deposit,tax,status,notes,promo_id,source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args:[idGen,type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||''] });
     if (status === 'confirmed') {
-      let promoLabel = '';
-      if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
       let roomNameStr = room;
       try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
-      syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0});
+      syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0});
     }
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -312,16 +312,16 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
   const { type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,
           checkinTime,checkoutTime,rate,cleaningFee,additionalFee,deposit,tax,status,notes,promoId,source,paymentMethod,paymentProofBase64 } = req.body;
   const nights = checkin && checkout ? Math.max(1,(new Date(checkout)-new Date(checkin))/(86400000)) : 1;
-  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0);
+  let discAmt = 0;
+  if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) { discAmt = pr[0].type==='percentage' ? (nights*(Number(rate)||0))*(Number(pr[0].value)/100) : Number(pr[0].value); } }
+  const total = (nights * (Number(rate)||0)) + (Number(cleaningFee)||0) + (Number(additionalFee)||0) + (Number(deposit)||0) + (Number(tax)||0) - discAmt;
   const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,additional_fee=?,deposit=?,tax=?,status=?,notes=?,promo_id=?,source=?,payment_method=? WHERE id=?`,
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',paymentMethod||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   if (status === 'confirmed') {
-    let promoLabel = '';
-    if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
     let roomNameStr = room;
     try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
-    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
+    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
       if (syncResult && syncResult.paymentProofUrl) {
         await db.execute({ sql: 'UPDATE bookings SET payment_proof_url=? WHERE id=?', args: [syncResult.paymentProofUrl, req.params.id] });
       }

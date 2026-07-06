@@ -54,7 +54,7 @@ function doPost(e) {
         const file = monthFolder.createFile(blob);
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         paymentProofUrl = file.getUrl();
-        paymentProofSheetValue = `=HYPERLINK("${paymentProofUrl}", "${fileName}")`;
+        paymentProofSheetValue = fileName;
         uploadStatus = 'Success';
       } catch (err) {
         uploadStatus = 'Error: ' + err.message;
@@ -128,12 +128,29 @@ function doPost(e) {
       const piIdx = headers.indexOf('PAYMENT INFO');
       const ppIdx = headers.indexOf('PAYMENT PROOF');
       if (piIdx !== -1 && !data.paymentInfo && values[rowIndex][piIdx]) row[piIdx] = values[rowIndex][piIdx];
+      
+      // Preserve old Payment Proof RichText if no new one was provided
+      let oldRichText = null;
       if (ppIdx !== -1 && !paymentProofSheetValue) {
-        const existingFormula = sheet.getRange(rowIndex + 1, ppIdx + 1).getFormula();
-        if (existingFormula || values[rowIndex][ppIdx]) row[ppIdx] = existingFormula || values[rowIndex][ppIdx];
+        oldRichText = sheet.getRange(rowIndex + 1, ppIdx + 1).getRichTextValue();
+        if (oldRichText && oldRichText.getText()) {
+          row[ppIdx] = oldRichText.getText();
+        } else if (values[rowIndex][ppIdx]) {
+          row[ppIdx] = values[rowIndex][ppIdx];
+        }
       }
       
       sheet.getRange(rowIndex + 1, 1, 1, lastCol).setValues([row]);
+      
+      // Apply new RichText link or restore old one
+      if (ppIdx !== -1) {
+        if (paymentProofUrl) {
+          const richText = SpreadsheetApp.newRichTextValue().setText(paymentProofSheetValue).setLinkUrl(paymentProofUrl).build();
+          sheet.getRange(rowIndex + 1, ppIdx + 1).setRichTextValue(richText);
+        } else if (oldRichText) {
+          sheet.getRange(rowIndex + 1, ppIdx + 1).setRichTextValue(oldRichText);
+        }
+      }
     } else {
       // Not found, append a new row but avoid data validation pushing it to row 1000
       const colA = sheet.getRange(1, 1, sheet.getMaxRows(), 1).getValues();
@@ -141,6 +158,12 @@ function doPost(e) {
       if (emptyRowIdx <= 1) emptyRowIdx = sheet.getLastRow() + 1; // Fallback
       
       sheet.getRange(emptyRowIdx, 1, 1, lastCol).setValues([row]);
+      
+      const ppIdx = headers.indexOf('PAYMENT PROOF');
+      if (ppIdx !== -1 && paymentProofUrl) {
+        const richText = SpreadsheetApp.newRichTextValue().setText(paymentProofSheetValue).setLinkUrl(paymentProofUrl).build();
+        sheet.getRange(emptyRowIdx, ppIdx + 1).setRichTextValue(richText);
+      }
     }
 
     return ContentService
