@@ -645,13 +645,16 @@ function setSeasonUI(isHigh) {
   const modal = document.querySelector('#room-modal .modal');
   const loBtn = $('season-btn-lo');
   const hiBtn = $('season-btn-hi');
+  const pill  = $('room-season-toggle-wrap');
   if (isHigh) {
     hiBtn.classList.add('active', 'hi-active');
     loBtn.classList.remove('active');
+    pill?.classList.add('hi-mode');
     modal?.classList.add('high-season-bg');
   } else {
     loBtn.classList.add('active');
     hiBtn.classList.remove('active', 'hi-active');
+    pill?.classList.remove('hi-mode');
     modal?.classList.remove('high-season-bg');
   }
 }

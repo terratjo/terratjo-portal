@@ -1233,12 +1233,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .season-toggle {
   display: flex;
   background: var(--bg-light, #f4f4f4);
-  border: 1.5px solid var(--border, #e2e8f0);
+  border: 1.5px solid var(--primary, #f5c518); /* Lo default = yellow outline */
   border-radius: 24px;
   padding: 4px;
   gap: 2px;
   margin-left: auto;
   margin-right: 16px;
+  transition: border-color 0.25s ease;
+}
+.season-toggle.hi-mode {
+  border-color: #e53e3e; /* Hi = red outline */
 }
 .season-btn {
   padding: 5px 16px;
@@ -1257,5 +1261,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .season-btn.active { background: var(--primary, #f5c518); color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 .season-btn.active.hi-active { background: #e53e3e; color: #fff; box-shadow: 0 2px 8px rgba(229,62,62,0.35); }
 
-/* High season soft red background for the popup */
+/* High season: soft red modal body + header */
 #room-modal .modal.high-season-bg { background: #fff5f5; transition: background 0.3s ease; }
+#room-modal .modal.high-season-bg .modal-header {
+  background: #ffe4e4;
+  border-bottom-color: #fca5a5;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Save Room CTA changes to red in high season */
+#room-modal .modal.high-season-bg .btn-save-room {
+  background: #e53e3e;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(229,62,62,0.35);
+}
+#room-modal .modal.high-season-bg .btn-save-room:hover {
+  background: #c53030;
+}
