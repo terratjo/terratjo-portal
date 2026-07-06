@@ -663,6 +663,7 @@ window.openEditRoom = id => {
   const r = app.rooms.find(x => x.id === id); if (!r) return;
   $('room-modal-title').textContent = t('inv.edit_room'); $('room-edit-id').value = id;
   $('room-name').value = r.name; $('room-location').value = r.location; $('room-capacity').value = r.capacity; $('room-desc').value = r.desc||'';
+  document.querySelector('.btn-save-room').textContent = 'Save Room';
   
   currentRoomRates = {
     rate: r.rate || 0,
@@ -713,6 +714,7 @@ $('btn-add-room')?.addEventListener('click', () => {
   $('room-modal-title').textContent = t('inv.add_room'); 
   $('room-form').reset(); 
   $('room-edit-id').value = '';
+  document.querySelector('.btn-save-room').textContent = 'Add Room';
   currentRoomRates = { rate: 310000, rate_weekend: 310000, rate_high: 400000, rate_high_weekend: 400000 };
   setSeasonUI(false);
   $('room-rate').value = currentRoomRates.rate;
