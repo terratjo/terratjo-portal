@@ -181,7 +181,27 @@ const idr = n => 'Rp ' + Number(n).toLocaleString('id-ID');
 const shortDate = s => s ? new Date(s).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '';
 const nightsCount = (ci, co) => Math.max(1, Math.round((new Date(co) - new Date(ci)) / 86400000));
 const getRoomName = id => (app.rooms.find(r => r.id === id) || { name:'—' }).name;
-const getRoomRate = id => (app.rooms.find(r => r.id === id) || { rate:310000 }).rate;
+// getRoomRate: if checkin/checkout provided, calculates weighted avg across weekday/weekend nights
+// Weekdays = Sun(0)–Thu(4), Weekend = Fri(5)–Sat(6)
+function getRoomRate(id, checkin, checkout) {
+  const room = app.rooms.find(r => r.id === id);
+  if (!room) return 310000;
+  const isHigh = room.is_high_season ? true : false;
+  const wdRate = isHigh ? (room.rate_high || room.rate || 0) : (room.rate || 0);
+  const weRate = isHigh ? (room.rate_high_weekend || room.rate_weekend || wdRate) : (room.rate_weekend || wdRate);
+  if (!checkin || !checkout) return wdRate;
+  let wdNights = 0, weNights = 0;
+  const d = new Date(checkin);
+  const end = new Date(checkout);
+  while (d < end) {
+    const day = d.getDay(); // 0=Sun,1=Mon,...,5=Fri,6=Sat
+    if (day === 5 || day === 6) weNights++; else wdNights++;
+    d.setDate(d.getDate() + 1);
+  }
+  const totalNights = wdNights + weNights;
+  if (totalNights === 0) return wdRate;
+  return Math.round((wdNights * wdRate + weNights * weRate) / totalNights);
+}
 const calcTotal = b => { const n = nightsCount(b.checkin, b.checkout); const acc = n * b.rate; const tax = Math.round((acc + b.cleaningFee + (b.additionalFee||0)) * (b.tax / 100)); const promo = b.promoId ? app.promos.find(p => p.id === b.promoId) : null; const disc = promo ? (promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc)) : 0; return acc + b.cleaningFee + (b.additionalFee||0) + b.deposit + tax - disc; };
 const todayStr = _todayJkt; // Already "YYYY-MM-DD" in Jakarta timezone — no toISOString() UTC drift
 // isExpired: true if server already set status='expired', OR quotation check-in date has passed
@@ -588,13 +608,61 @@ $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-
 function renderInventory() {
   const list = $('rooms-list'); if (!list) return; list.innerHTML = '';
   app.rooms.forEach(r => {
-    list.innerHTML += `<div class="room-card"><div class="room-card-info"><h3>${r.name}</h3><p>${r.location} · ${t('inv.max')} ${r.capacity} ${t('inv.guests')} &middot; ${idr(r.rate)}/${t('inv.night')}</p><p>${r.desc||''}</p></div><div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">${t('inv.edit')}</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">${t('inv.delete')}</button></div></div>`;
+    const seasonBadge = r.is_high_season 
+      ? `<span style="background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">🔥 HIGH SEASON</span>`
+      : `<span style="background:#ecfdf5;color:#065f46;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;">🌿 LOW SEASON</span>`;
+    const lowWd = r.rate || 0;
+    const lowWe = r.rate_weekend || lowWd;
+    const hiWd = r.rate_high || lowWd;
+    const hiWe = r.rate_high_weekend || lowWe;
+    list.innerHTML += `<div class="room-card">
+      <div class="room-card-info">
+        <h3>${r.name} &nbsp; ${seasonBadge}</h3>
+        <p>${r.location} · ${t('inv.max')} ${r.capacity} ${t('inv.guests')}</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;">
+            <div style="font-size:10px;font-weight:600;color:#64748b;letter-spacing:.5px;">LOW SEASON</div>
+            <div style="font-size:12px;color:#334155;margin-top:2px;">Weekday: <strong>${idr(lowWd)}</strong> &nbsp;·&nbsp; Weekend: <strong>${idr(lowWe)}</strong></div>
+          </div>
+          <div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:6px 12px;">
+            <div style="font-size:10px;font-weight:600;color:#c53030;letter-spacing:.5px;">HIGH SEASON</div>
+            <div style="font-size:12px;color:#334155;margin-top:2px;">Weekday: <strong>${idr(hiWd)}</strong> &nbsp;·&nbsp; Weekend: <strong>${idr(hiWe)}</strong></div>
+          </div>
+        </div>
+        <p style="margin-top:6px;">${r.desc||''}</p>
+      </div>
+      <div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">${t('inv.edit')}</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">${t('inv.delete')}</button></div>
+    </div>`;
   });
 }
+let currentRoomRates = { rate: 310000, rate_weekend: 310000, rate_high: 400000, rate_high_weekend: 400000 };
+
 window.openEditRoom = id => {
   const r = app.rooms.find(x => x.id === id); if (!r) return;
   $('room-modal-title').textContent = t('inv.edit_room'); $('room-edit-id').value = id;
-  $('room-name').value = r.name; $('room-location').value = r.location; $('room-capacity').value = r.capacity; $('room-rate').value = r.rate; $('room-desc').value = r.desc||'';
+  $('room-name').value = r.name; $('room-location').value = r.location; $('room-capacity').value = r.capacity; $('room-desc').value = r.desc||'';
+  
+  currentRoomRates = {
+    rate: r.rate || 0,
+    rate_weekend: r.rate_weekend || 0,
+    rate_high: r.rate_high || 0,
+    rate_high_weekend: r.rate_high_weekend || 0
+  };
+  
+  const isHigh = r.is_high_season ? true : false;
+  $('room-season-toggle').checked = isHigh;
+  if (isHigh) {
+    $('room-rate').value = currentRoomRates.rate_high;
+    $('room-rate-weekend').value = currentRoomRates.rate_high_weekend;
+    $('room-modal').classList.add('high-season-bg');
+    $('room-season-label').textContent = 'High Season';
+  } else {
+    $('room-rate').value = currentRoomRates.rate;
+    $('room-rate-weekend').value = currentRoomRates.rate_weekend;
+    $('room-modal').classList.remove('high-season-bg');
+    $('room-season-label').textContent = 'Low Season';
+  }
+  
   $('room-modal').classList.add('active');
 };
 window.deleteRoom = async id => {
@@ -602,10 +670,54 @@ window.deleteRoom = async id => {
   try { await api.del(`/rooms/${id}`); showToast('Room deleted.'); await loadData(); renderInventory(); }
   catch (e) { showToast('Delete failed: ' + e.message); }
 };
-$('btn-add-room')?.addEventListener('click', () => { $('room-modal-title').textContent = t('inv.add_room'); $('room-form').reset(); $('room-edit-id').value = ''; $('room-modal').classList.add('active'); });
+
+$('room-season-toggle')?.addEventListener('change', e => {
+  const isHigh = e.target.checked;
+  if (!isHigh) {
+    currentRoomRates.rate_high = $('room-rate').value;
+    currentRoomRates.rate_high_weekend = $('room-rate-weekend').value;
+    $('room-rate').value = currentRoomRates.rate || 0;
+    $('room-rate-weekend').value = currentRoomRates.rate_weekend || 0;
+    $('room-modal').classList.remove('high-season-bg');
+    $('room-season-label').textContent = 'Low Season';
+  } else {
+    currentRoomRates.rate = $('room-rate').value;
+    currentRoomRates.rate_weekend = $('room-rate-weekend').value;
+    $('room-rate').value = currentRoomRates.rate_high || 0;
+    $('room-rate-weekend').value = currentRoomRates.rate_high_weekend || 0;
+    $('room-modal').classList.add('high-season-bg');
+    $('room-season-label').textContent = 'High Season';
+  }
+});
+
+$('btn-add-room')?.addEventListener('click', () => { 
+  $('room-modal-title').textContent = t('inv.add_room'); 
+  $('room-form').reset(); 
+  $('room-edit-id').value = '';
+  currentRoomRates = { rate: 310000, rate_weekend: 310000, rate_high: 400000, rate_high_weekend: 400000 };
+  $('room-season-toggle').checked = false;
+  $('room-rate').value = currentRoomRates.rate;
+  $('room-rate-weekend').value = currentRoomRates.rate_weekend;
+  $('room-modal').classList.remove('high-season-bg');
+  $('room-season-label').textContent = 'Low Season';
+  $('room-modal').classList.add('active'); 
+});
 $('room-form')?.addEventListener('submit', async e => {
   e.preventDefault();
-  const data = { name:$('room-name').value, location:$('room-location').value, capacity:+$('room-capacity').value, rate:+$('room-rate').value, desc:$('room-desc').value };
+  const isHigh = $('room-season-toggle').checked;
+  if (isHigh) {
+    currentRoomRates.rate_high = $('room-rate').value;
+    currentRoomRates.rate_high_weekend = $('room-rate-weekend').value;
+  } else {
+    currentRoomRates.rate = $('room-rate').value;
+    currentRoomRates.rate_weekend = $('room-rate-weekend').value;
+  }
+  const data = { 
+    name:$('room-name').value, location:$('room-location').value, capacity:+$('room-capacity').value, 
+    rate:+currentRoomRates.rate, rate_weekend:+currentRoomRates.rate_weekend,
+    rate_high:+currentRoomRates.rate_high, rate_high_weekend:+currentRoomRates.rate_high_weekend,
+    is_high_season: isHigh, desc:$('room-desc').value 
+  };
   const eid = $('room-edit-id').value;
   try {
     if (eid) { await api.put(`/rooms/${eid}`, data); showToast('Room updated.'); }
@@ -686,14 +798,16 @@ function openForm(type, dateStr, prefillId) {
     $('form-modal-title').textContent = type==='booking'?'New Booking':'New Quotation';
     $('booking-form').reset(); $('booking-form').dataset.editId = '';
     $('form-checkin').value = dateStr||fmt(today); $('form-checkout').value = fmt(addD(new Date($('form-checkin').value), 1));
-    $('form-price').value = getRoomRate($('form-room').value||app.rooms[0]?.id||'r1'); $('form-guests').value=1; $('form-cleaning').value=0; $('form-deposit').value=0; $('form-tax').value=0; $('form-checkin-time').value='14:00'; $('form-checkout-time').value='12:00';
+    $('form-price').value = getRoomRate($('form-room').value||app.rooms[0]?.id||'r1', $('form-checkin').value, $('form-checkout').value); $('form-guests').value=1; $('form-cleaning').value=0; $('form-deposit').value=0; $('form-tax').value=0; $('form-checkin-time').value='14:00'; $('form-checkout-time').value='12:00';
     populatePromoSelect($('form-room').value||app.rooms[0]?.id||'');
   }
   currentFormAction = type; calcFormSummary(); $('form-modal').classList.add('active');
 }
 ['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax','form-additional'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
 $('form-promo')?.addEventListener('change', calcFormSummary);
-$('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value); populatePromoSelect($('form-room').value); calcFormSummary(); });
+$('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value, $('form-checkin').value, $('form-checkout').value); populatePromoSelect($('form-room').value); calcFormSummary(); });
+// Auto-recalculate rate when dates change
+['form-checkin','form-checkout'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', () => { if ($('form-room').value) { $('form-price').value = getRoomRate($('form-room').value, $('form-checkin').value, $('form-checkout').value); } calcFormSummary(); }); });
 $('btn-create-booking-form')?.addEventListener('click', () => { lastAction = 'booking'; });
 $('btn-create-quotation-form')?.addEventListener('click', () => { lastAction = 'quotation'; });
 $('booking-form')?.addEventListener('submit', async e => {

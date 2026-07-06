@@ -71,6 +71,11 @@ async function seedData() {
   }
 
   const { rows: [rc] } = await db.execute('SELECT COUNT(*) as c FROM rooms');
+  // Migration: add new rate columns to rooms
+  await db.execute('ALTER TABLE rooms ADD COLUMN rate_weekend REAL DEFAULT 0').catch(() => {});
+  await db.execute('ALTER TABLE rooms ADD COLUMN rate_high REAL DEFAULT 0').catch(() => {});
+  await db.execute('ALTER TABLE rooms ADD COLUMN rate_high_weekend REAL DEFAULT 0').catch(() => {});
+  await db.execute('ALTER TABLE rooms ADD COLUMN is_high_season INTEGER DEFAULT 0').catch(() => {});
   if (Number(rc.c) === 0) {
     await db.batch([
       { sql: 'INSERT OR IGNORE INTO rooms VALUES (?,?,?,?,?,?)', args: ['r1','Terratjo Room','Taman Melati Apt, Yogyakarta',2,310000,'Cozy studio with modern amenities'] },
@@ -221,18 +226,18 @@ app.get('/api/rooms', auth, async (req, res) => {
   const { rows } = await db.execute('SELECT * FROM rooms ORDER BY rate ASC'); res.json(rows);
 });
 app.post('/api/rooms', auth, async (req, res) => {
-  const { id, name, location, capacity, rate, desc } = req.body;
+  const { id, name, location, capacity, rate, rate_weekend, rate_high, rate_high_weekend, is_high_season, desc } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
   try {
-    await db.execute({ sql:'INSERT INTO rooms VALUES (?,?,?,?,?,?)',
-      args:[id||`r${Date.now()}`,name,location,capacity,rate,desc] });
+    await db.execute({ sql:'INSERT INTO rooms (id, name, location, capacity, rate, rate_weekend, rate_high, rate_high_weekend, is_high_season, desc) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      args:[id||`r${Date.now()}`,name,location,capacity,rate,rate_weekend||0,rate_high||0,rate_high_weekend||0,is_high_season?1:0,desc] });
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/rooms/:id', auth, async (req, res) => {
-  const { name, location, capacity, rate, desc } = req.body;
-  const r = await db.execute({ sql:'UPDATE rooms SET name=?,location=?,capacity=?,rate=?,desc=? WHERE id=?',
-    args:[name,location,capacity,rate,desc,req.params.id] });
+  const { name, location, capacity, rate, rate_weekend, rate_high, rate_high_weekend, is_high_season, desc } = req.body;
+  const r = await db.execute({ sql:'UPDATE rooms SET name=?,location=?,capacity=?,rate=?,rate_weekend=?,rate_high=?,rate_high_weekend=?,is_high_season=?,desc=? WHERE id=?',
+    args:[name,location,capacity,rate,rate_weekend||0,rate_high||0,rate_high_weekend||0,is_high_season?1:0,desc,req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });

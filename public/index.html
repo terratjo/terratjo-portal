@@ -607,6 +607,13 @@
     <div class="modal form-modal">
         <div class="modal-header">
             <h3 id="room-modal-title">Add Room</h3>
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; margin-right: 20px;">
+                <span style="font-size: 13px; font-weight: 500;" id="room-season-label">Low Season</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="room-season-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
             <button class="btn-icon" id="btn-close-room-modal"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body">
@@ -616,7 +623,10 @@
                 <div class="form-group"><label data-i18n="inv.lbl_loc">Floor / Location</label><input type="text" id="room-location" placeholder="Taman Melati Apartment, Yogyakarta" required></div>
                 <div class="form-row">
                     <div class="form-group"><label data-i18n="inv.lbl_cap">Capacity (Guests)</label><input type="number" id="room-capacity" value="2" min="1" required></div>
-                    <div class="form-group"><label data-i18n="inv.lbl_rate">Default Rate/Night (Rp)</label><input type="number" id="room-rate" value="310000" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Weekday Price (Sun-Thu)</label><input type="number" id="room-rate" value="310000" required></div>
+                    <div class="form-group"><label>Weekend Price (Fri-Sat)</label><input type="number" id="room-rate-weekend" value="310000" required></div>
                 </div>
                 <div class="form-group"><label data-i18n="inv.lbl_desc">Description</label><input type="text" id="room-desc" placeholder="e.g. Cozy studio with modern amenities"></div>
                 <div class="form-actions">
