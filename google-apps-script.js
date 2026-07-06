@@ -21,6 +21,7 @@ function doPost(e) {
 
     // Process Payment Proof Upload
     let paymentProofUrl = '';
+    let paymentProofSheetValue = '';
     let uploadStatus = 'No file';
     if (data.paymentProofBase64) {
       try {
@@ -48,10 +49,12 @@ function doPost(e) {
           else if (mimeType.includes('pdf')) ext = '.pdf';
         }
         
-        const blob = Utilities.newBlob(Utilities.base64Decode(b64), mimeType, (data.guestName || data.id) + ext);
+        const fileName = (data.guestName || data.id) + ext;
+        const blob = Utilities.newBlob(Utilities.base64Decode(b64), mimeType, fileName);
         const file = monthFolder.createFile(blob);
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         paymentProofUrl = file.getUrl();
+        paymentProofSheetValue = `=HYPERLINK("${paymentProofUrl}", "${fileName}")`;
         uploadStatus = 'Success';
       } catch (err) {
         uploadStatus = 'Error: ' + err.message;
@@ -89,7 +92,7 @@ function doPost(e) {
     setCol('Additional Fee', data.additionalFee || 0);
     setCol('PROMO', data.promo || '');
     setCol('Payment Info', data.paymentInfo || '');
-    setCol('Payment Proof', paymentProofUrl || '');
+    setCol('Payment Proof', paymentProofSheetValue || '');
     setCol('Total (IDR)', data.total || 0);
     setCol('TOTAL PAYMENT', data.total || 0);
     setCol('Status', data.status || '');
@@ -125,7 +128,10 @@ function doPost(e) {
       const piIdx = headers.indexOf('PAYMENT INFO');
       const ppIdx = headers.indexOf('PAYMENT PROOF');
       if (piIdx !== -1 && !data.paymentInfo && values[rowIndex][piIdx]) row[piIdx] = values[rowIndex][piIdx];
-      if (ppIdx !== -1 && !paymentProofUrl && values[rowIndex][ppIdx]) row[ppIdx] = values[rowIndex][ppIdx];
+      if (ppIdx !== -1 && !paymentProofSheetValue) {
+        const existingFormula = sheet.getRange(rowIndex + 1, ppIdx + 1).getFormula();
+        if (existingFormula || values[rowIndex][ppIdx]) row[ppIdx] = existingFormula || values[rowIndex][ppIdx];
+      }
       
       sheet.getRange(rowIndex + 1, 1, 1, lastCol).setValues([row]);
     } else {
