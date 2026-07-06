@@ -1228,3 +1228,34 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     max-height: 90vh !important;
   }
 }
+
+/* ── Season Toggle (Lo/Hi) in Room Modal ────────────────────────── */
+.season-toggle {
+  display: flex;
+  background: var(--bg-light, #f4f4f4);
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 24px;
+  padding: 4px;
+  gap: 2px;
+  margin-left: auto;
+  margin-right: 16px;
+}
+.season-btn {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-light, #64748b);
+  letter-spacing: 0.8px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.season-btn:hover { color: var(--text-dark, #1e293b); background: rgba(0,0,0,0.05); }
+.season-btn.active { background: var(--primary, #f5c518); color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.season-btn.active.hi-active { background: #e53e3e; color: #fff; box-shadow: 0 2px 8px rgba(229,62,62,0.35); }
+
+/* High season soft red background for the popup */
+#room-modal .modal.high-season-bg { background: #fff5f5; transition: background 0.3s ease; }

@@ -637,6 +637,25 @@ function renderInventory() {
 }
 let currentRoomRates = { rate: 310000, rate_weekend: 310000, rate_high: 400000, rate_high_weekend: 400000 };
 
+// Helper: returns true if Hi season btn is active
+function isHighSeason() { return $('season-btn-hi')?.classList.contains('active'); }
+
+// Apply season UI state
+function setSeasonUI(isHigh) {
+  const modal = document.querySelector('#room-modal .modal');
+  const loBtn = $('season-btn-lo');
+  const hiBtn = $('season-btn-hi');
+  if (isHigh) {
+    hiBtn.classList.add('active', 'hi-active');
+    loBtn.classList.remove('active');
+    modal?.classList.add('high-season-bg');
+  } else {
+    loBtn.classList.add('active');
+    hiBtn.classList.remove('active', 'hi-active');
+    modal?.classList.remove('high-season-bg');
+  }
+}
+
 window.openEditRoom = id => {
   const r = app.rooms.find(x => x.id === id); if (!r) return;
   $('room-modal-title').textContent = t('inv.edit_room'); $('room-edit-id').value = id;
@@ -650,17 +669,13 @@ window.openEditRoom = id => {
   };
   
   const isHigh = r.is_high_season ? true : false;
-  $('room-season-toggle').checked = isHigh;
+  setSeasonUI(isHigh);
   if (isHigh) {
     $('room-rate').value = currentRoomRates.rate_high;
     $('room-rate-weekend').value = currentRoomRates.rate_high_weekend;
-    $('room-modal').classList.add('high-season-bg');
-    $('room-season-label').textContent = 'High Season';
   } else {
     $('room-rate').value = currentRoomRates.rate;
     $('room-rate-weekend').value = currentRoomRates.rate_weekend;
-    $('room-modal').classList.remove('high-season-bg');
-    $('room-season-label').textContent = 'Low Season';
   }
   
   $('room-modal').classList.add('active');
@@ -671,40 +686,39 @@ window.deleteRoom = async id => {
   catch (e) { showToast('Delete failed: ' + e.message); }
 };
 
-$('room-season-toggle')?.addEventListener('change', e => {
-  const isHigh = e.target.checked;
-  if (!isHigh) {
-    currentRoomRates.rate_high = $('room-rate').value;
-    currentRoomRates.rate_high_weekend = $('room-rate-weekend').value;
-    $('room-rate').value = currentRoomRates.rate || 0;
-    $('room-rate-weekend').value = currentRoomRates.rate_weekend || 0;
-    $('room-modal').classList.remove('high-season-bg');
-    $('room-season-label').textContent = 'Low Season';
-  } else {
+function handleSeasonToggle(toHigh) {
+  if (toHigh) {
+    // Save current lo values before switching
     currentRoomRates.rate = $('room-rate').value;
     currentRoomRates.rate_weekend = $('room-rate-weekend').value;
     $('room-rate').value = currentRoomRates.rate_high || 0;
     $('room-rate-weekend').value = currentRoomRates.rate_high_weekend || 0;
-    $('room-modal').classList.add('high-season-bg');
-    $('room-season-label').textContent = 'High Season';
+  } else {
+    // Save current hi values before switching
+    currentRoomRates.rate_high = $('room-rate').value;
+    currentRoomRates.rate_high_weekend = $('room-rate-weekend').value;
+    $('room-rate').value = currentRoomRates.rate || 0;
+    $('room-rate-weekend').value = currentRoomRates.rate_weekend || 0;
   }
-});
+  setSeasonUI(toHigh);
+}
+
+$('season-btn-lo')?.addEventListener('click', () => handleSeasonToggle(false));
+$('season-btn-hi')?.addEventListener('click', () => handleSeasonToggle(true));
 
 $('btn-add-room')?.addEventListener('click', () => { 
   $('room-modal-title').textContent = t('inv.add_room'); 
   $('room-form').reset(); 
   $('room-edit-id').value = '';
   currentRoomRates = { rate: 310000, rate_weekend: 310000, rate_high: 400000, rate_high_weekend: 400000 };
-  $('room-season-toggle').checked = false;
+  setSeasonUI(false);
   $('room-rate').value = currentRoomRates.rate;
   $('room-rate-weekend').value = currentRoomRates.rate_weekend;
-  $('room-modal').classList.remove('high-season-bg');
-  $('room-season-label').textContent = 'Low Season';
   $('room-modal').classList.add('active'); 
 });
 $('room-form')?.addEventListener('submit', async e => {
   e.preventDefault();
-  const isHigh = $('room-season-toggle').checked;
+  const isHigh = isHighSeason();
   if (isHigh) {
     currentRoomRates.rate_high = $('room-rate').value;
     currentRoomRates.rate_high_weekend = $('room-rate-weekend').value;
@@ -726,6 +740,7 @@ $('room-form')?.addEventListener('submit', async e => {
   } catch (e) { showToast('Save failed: ' + e.message); }
 });
 ['btn-close-room-modal','btn-cancel-room'].forEach(id => $(id)?.addEventListener('click', () => $('room-modal').classList.remove('active')));
+
 
 // ── Settings ──────────────────────────────────────────────────────
 function renderSettings() {

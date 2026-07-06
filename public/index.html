@@ -607,12 +607,9 @@
     <div class="modal form-modal">
         <div class="modal-header">
             <h3 id="room-modal-title">Add Room</h3>
-            <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; margin-right: 20px;">
-                <span style="font-size: 13px; font-weight: 500;" id="room-season-label">Low Season</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="room-season-toggle">
-                    <span class="slider"></span>
-                </label>
+            <div class="season-toggle" id="room-season-toggle-wrap">
+                <button type="button" class="season-btn active" id="season-btn-lo">Lo</button>
+                <button type="button" class="season-btn" id="season-btn-hi">Hi</button>
             </div>
             <button class="btn-icon" id="btn-close-room-modal"><i data-lucide="x"></i></button>
         </div>
