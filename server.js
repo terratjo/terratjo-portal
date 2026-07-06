@@ -301,7 +301,9 @@ app.post('/api/bookings', auth, async (req, res) => {
     if (status === 'confirmed') {
       let promoLabel = '';
       if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
-      syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0});
+      let roomNameStr = room;
+      try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
+      syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0});
     }
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -317,7 +319,9 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
   if (status === 'confirmed') {
     let promoLabel = '';
     if (promoId) { const {rows:pr}=await db.execute({sql:'SELECT * FROM promos WHERE id=?',args:[promoId]}); if(pr[0]) promoLabel=pr[0].type==='percentage'?`${pr[0].name} (-${pr[0].value}%)`:`${pr[0].name} (-Rp ${Number(pr[0].value).toLocaleString('id-ID')})`; }
-    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
+    let roomNameStr = room;
+    try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
+    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:promoLabel,reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
       if (syncResult && syncResult.paymentProofUrl) {
         await db.execute({ sql: 'UPDATE bookings SET payment_proof_url=? WHERE id=?', args: [syncResult.paymentProofUrl, req.params.id] });
       }
