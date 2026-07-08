@@ -637,7 +637,6 @@ $('btn-goto-today')?.addEventListener('click', () => {
   const now = new Date(_todayJkt + 'T00:00:00');
   calMonth = now.getMonth();
   calYear = now.getFullYear();
-  navigate('calendar');
   renderCalendar();
 });
 

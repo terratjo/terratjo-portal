@@ -1288,18 +1288,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 }
 
 
-/* ── Today Pill Button (fixed bottom-left, mirrors lang-toggle) ──── */
+/* ── Calendar Footer + Today Pill ───────────────────────────────── */
+.calendar-footer {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px 8px 16px;
+}
 .today-pill-wrap {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 400;
   display: flex;
   background: #fff;
   border: 1.5px solid var(--border);
   border-radius: 24px;
   padding: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
 }
 .today-pill-btn {
   padding: 7px 18px;
@@ -1320,6 +1321,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   box-shadow: 0 2px 12px rgba(0,0,0,0.2);
 }
 @media(max-width:1000px){
-  .today-pill-wrap { bottom: 70px; left: 16px; }
+  .calendar-footer { padding: 10px 12px 6px 12px; }
   .today-pill-btn { padding: 6px 14px; font-size: 11px; }
 }
