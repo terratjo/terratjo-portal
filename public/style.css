@@ -1321,6 +1321,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   box-shadow: 0 2px 12px rgba(0,0,0,0.2);
 }
 @media(max-width:1000px){
-  .today-pill-wrap { bottom: 70px; left: 16px; }
+  .today-pill-wrap {
+    position: fixed;
+    bottom: 70px;
+    left: 16px;
+    z-index: 400;
+  }
   .today-pill-btn { padding: 6px 14px; font-size: 11px; }
 }
