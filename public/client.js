@@ -915,9 +915,17 @@ $('btn-save-settings')?.addEventListener('click', async () => {
 function populateRoomSelect() { const sel = $('form-room'); if (!sel) return; sel.innerHTML = ''; app.rooms.forEach(r => { sel.innerHTML += `<option value="${r.id}">${r.name}</option>`; }); }
 function populatePromoSelect(roomId) {
   const sel = $('form-promo'); if (!sel) return;
+  const ci = $('form-checkin')?.value;
+  const co = $('form-checkout')?.value;
   const applicable = app.promos.filter(p => {
     const st = promoStatus(p);
-    return (st === 'ongoing' || st === 'scheduled') && (p.roomId === 'all' || p.roomId === roomId);
+    if (st === 'inactive') return false;
+    if (p.roomId !== 'all' && p.roomId !== roomId) return false;
+    // If booking dates are set, only show promos whose period overlaps
+    if (ci && co && p.startDate && p.endDate) {
+      return ci <= p.endDate && co >= p.startDate;
+    }
+    return true;
   });
   sel.innerHTML = '<option value="">— No Promo —</option>';
   applicable.forEach(p => {
@@ -968,8 +976,8 @@ function openForm(type, dateStr, prefillId) {
 ['form-checkin','form-checkout','form-price','form-cleaning','form-deposit','form-tax','form-additional'].forEach(id => { const el = $(id); if (el) el.addEventListener('input', calcFormSummary); });
 $('form-promo')?.addEventListener('change', calcFormSummary);
 $('form-room')?.addEventListener('change', () => { $('form-price').value = getRoomRate($('form-room').value, $('form-checkin').value, $('form-checkout').value); populatePromoSelect($('form-room').value); calcFormSummary(); });
-// Auto-recalculate rate when dates change
-['form-checkin','form-checkout'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', () => { if ($('form-room').value) { $('form-price').value = getRoomRate($('form-room').value, $('form-checkin').value, $('form-checkout').value); } calcFormSummary(); }); });
+// Auto-recalculate rate and re-filter promos when dates change
+['form-checkin','form-checkout'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', () => { if ($('form-room').value) { $('form-price').value = getRoomRate($('form-room').value, $('form-checkin').value, $('form-checkout').value); } populatePromoSelect($('form-room').value); calcFormSummary(); }); });
 $('btn-create-booking-form')?.addEventListener('click', () => { lastAction = 'booking'; });
 $('btn-create-quotation-form')?.addEventListener('click', () => { lastAction = 'quotation'; });
 $('booking-form')?.addEventListener('submit', async e => {
@@ -1267,7 +1275,7 @@ function renderPromos() {
     return `<span class="promo-badge ${cfg.cls}">${cfg.lbl}</span>`;
   };
   list.innerHTML = `<div class="promo-table-wrap"><table class="promo-table">
-    <thead><tr><th>${t('th.desc')}</th><th>${t('th.room')}</th><th>${t('th.discount')}</th><th>${t('th.period')}</th><th>${t('th.status')}</th><th></th></tr></thead>
+    <thead><tr><th>${t('th.desc')}</th><th>${t('th.room')}</th><th>${t('th.discount')}</th><th style="text-align:center">${t('th.period')}</th><th>${t('th.status')}</th><th></th></tr></thead>
     <tbody>${app.promos.map(p => {
       const st = promoStatus(p);
       const disc = p.type === 'percentage' ? `-${p.value}%` : `-${idr(p.value)}`;
@@ -1277,7 +1285,7 @@ function renderPromos() {
         <td><strong>${p.name}</strong></td>
         <td>${room}</td>
         <td style="color:#16a34a;font-weight:700;">${disc}</td>
-        <td style="font-size:12px;">${period}</td>
+        <td style="font-size:12px;text-align:center;">${period}</td>
         <td>${badge(st)}</td>
         <td style="white-space:nowrap;">
           <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">${t('inv.edit')}</button>
