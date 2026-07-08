@@ -1287,12 +1287,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   background: #c53030;
 }
 
-/* ── Today Pill Button (fixed, calendar page only) ────────────────── */
+/* ── Today Pill Button (absolute overlay, bottom-left of calendar grid) ── */
+.calendar-grid { position: relative; }
 .today-pill-wrap {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 400;
+  position: absolute;
+  bottom: 4px;
+  left: 14px;
+  z-index: 10;
   display: flex;
   background: #fff;
   border: 1.5px solid var(--border);
