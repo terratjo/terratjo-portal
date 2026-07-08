@@ -1287,13 +1287,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   background: #c53030;
 }
 
-/* ── Today Pill Button (absolute inside calendar-container, matches lang-toggle level) ── */
-.calendar-container { position: relative; }
+/* ── Today Pill Button \u2014 mirrors lang-toggle, position:fixed on all breakpoints ── */
 .today-pill-wrap {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
-  left: 16px;
-  z-index: 10;
+  left: 24px;
+  z-index: 400;
   display: flex;
   background: #fff;
   border: 1.5px solid var(--border);
@@ -1319,12 +1318,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   background: #e6b800;
   box-shadow: 0 2px 12px rgba(0,0,0,0.2);
 }
+/* Tablet & mobile: match lang-toggle which is bottom:70px right:16px */
 @media(max-width:1000px){
-  .today-pill-wrap {
-    position: fixed;
-    bottom: 70px;
-    left: 16px;
-    z-index: 400;
-  }
+  .today-pill-wrap { bottom: 70px; left: 16px; }
   .today-pill-btn { padding: 6px 14px; font-size: 11px; }
 }

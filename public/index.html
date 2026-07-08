@@ -112,10 +112,6 @@
                     </div>
                     <div class="days-grid" id="days-grid"></div>
                 </div>
-                <!-- Today button floats at bottom-left of calendar container -->
-                <div class="today-pill-wrap" id="today-pill-fixed">
-                    <button class="today-pill-btn" id="btn-goto-today">Today</button>
-                </div>
             </div>
         </main>
 
@@ -351,7 +347,10 @@
         <button class="lang-btn" data-lang="id" onclick="setLanguage('id')">ID</button>
     </div>
 
-
+    <!-- Today Button — fixed, mirrors lang-toggle, shown only on calendar page -->
+    <div class="today-pill-wrap" id="today-pill-fixed" style="display:none;">
+        <button class="today-pill-btn" id="btn-goto-today">Today</button>
+    </div>
 
 </div><!-- end app-container -->
 
