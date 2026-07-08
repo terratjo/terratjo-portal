@@ -401,6 +401,49 @@ function refreshCurrentPage() {
 document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', e => { e.preventDefault(); navigate(el.dataset.page); }));
 
 // ── Calendar ─────────────────────────────────────────────────────
+// ── Indonesian Public Holidays ──────────────────────────────────────
+const ID_HOLIDAYS = {
+  // 2025
+  '2025-01-01': 'Tahun Baru 2025',
+  '2025-01-27': 'Isra\u02bc Mi\u02bcraj Nabi Muhammad SAW',
+  '2025-01-29': 'Tahun Baru Imlek 2576',
+  '2025-03-29': 'Hari Suci Nyepi (Tahun Baru Saka 1947)',
+  '2025-03-31': 'Hari Raya Idul Fitri 1446 H',
+  '2025-04-01': 'Hari Raya Idul Fitri 1446 H (Hari ke-2)',
+  '2025-04-18': 'Wafat Isa Al Masih (Good Friday)',
+  '2025-04-20': 'Paskah (Easter Sunday)',
+  '2025-05-01': 'Hari Buruh Internasional',
+  '2025-05-12': 'Hari Raya Waisak 2569 BE',
+  '2025-05-29': 'Kenaikan Isa Al Masih',
+  '2025-06-01': 'Hari Lahir Pancasila',
+  '2025-06-06': 'Hari Raya Idul Adha 1446 H',
+  '2025-06-26': 'Tahun Baru Islam 1447 H (Muharram)',
+  '2025-08-17': 'Hari Kemerdekaan Republik Indonesia',
+  '2025-09-04': 'Maulid Nabi Muhammad SAW',
+  '2025-12-25': 'Hari Raya Natal',
+  '2025-12-26': 'Cuti Bersama Natal',
+  // 2026
+  '2026-01-01': 'Tahun Baru 2026',
+  '2026-01-17': 'Isra\u02bc Mi\u02bcraj Nabi Muhammad SAW',
+  '2026-02-17': 'Tahun Baru Imlek 2577',
+  '2026-03-19': 'Hari Raya Idul Fitri 1447 H',
+  '2026-03-20': 'Hari Raya Idul Fitri 1447 H (Hari ke-2)',
+  '2026-03-21': 'Cuti Bersama Idul Fitri',
+  '2026-03-28': 'Hari Suci Nyepi (Tahun Baru Saka 1948)',
+  '2026-04-03': 'Wafat Isa Al Masih (Good Friday)',
+  '2026-04-05': 'Paskah (Easter Sunday)',
+  '2026-05-01': 'Hari Buruh Internasional',
+  '2026-05-14': 'Kenaikan Isa Al Masih',
+  '2026-05-27': 'Hari Raya Idul Adha 1447 H',
+  '2026-05-31': 'Hari Raya Waisak 2570 BE',
+  '2026-06-01': 'Hari Lahir Pancasila',
+  '2026-06-16': 'Tahun Baru Islam 1448 H (Muharram)',
+  '2026-08-17': 'Hari Kemerdekaan Republik Indonesia',
+  '2026-08-25': 'Maulid Nabi Muhammad SAW',
+  '2026-12-25': 'Hari Raya Natal',
+  '2026-12-26': 'Cuti Bersama Natal',
+};
+
 function renderCalendar() {
   $('current-month-display').textContent = [t('cal.jan'),t('cal.feb'),t('cal.mar'),t('cal.apr'),t('cal.may'),t('cal.jun'),t('cal.jul'),t('cal.aug'),t('cal.sep'),t('cal.oct'),t('cal.nov'),t('cal.dec')][calMonth] + ' ' + calYear;
   const grid = $('days-grid'); if (!grid) return; grid.innerHTML = '';
@@ -411,15 +454,23 @@ function renderCalendar() {
   for (let i = first - 1; i >= 0; i--) grid.innerHTML += `<div class="day-cell past"><div class="day-number inactive">${prevDim - i}</div></div>`;
   for (let d = 1; d <= dim; d++) {
     const ds = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const isToday = ds === todayStr; const isWE = [0, 6].includes(new Date(calYear, calMonth, d).getDay());
-    let cls = isToday ? 'today' : isWE ? 'weekend' : ''; let blks = '';
+    const isToday = ds === todayStr;
+    const isWE = [0, 6].includes(new Date(calYear, calMonth, d).getDay());
+    const holiday = ID_HOLIDAYS[ds];
+    // Priority: holiday > today > weekend
+    let cls = holiday ? 'holiday' : isToday ? 'today' : isWE ? 'weekend' : '';
+    if (isToday && holiday) cls = 'today holiday';
+    let blks = '';
     app.bookings.forEach(b => {
       if (ds >= b.checkin && ds < b.checkout) {
         const lbl = ds === b.checkin ? (b.guestName||'').split(' ')[0] : '';
         blks += `<div class="booking-block booking-${effStatus(b)}" data-bid="${b.id}" onclick="openIPM('${b.id}');event.stopPropagation();">${lbl}</div>`;
       }
     });
-    const isPast = ds < todayStr; grid.innerHTML += `<div class="day-cell ${isPast ? 'past' : ''}" data-date="${ds}"><div class="day-number ${cls}">${d}</div>${blks}</div>`;
+    const holidayLabel = holiday ? `<span class="holiday-label" title="${holiday}">${holiday.split(' ').slice(0,3).join(' ')}</span>` : '';
+    const isPast = ds < todayStr;
+    const cellTitle = holiday ? ` title="${holiday}"` : '';
+    grid.innerHTML += `<div class="day-cell ${isPast ? 'past' : ''} ${holiday ? 'holiday-cell' : ''}" data-date="${ds}"${cellTitle}><div class="day-number ${cls}">${d}</div>${holidayLabel}${blks}</div>`;
   }
   const total = first + dim; const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let i = 1; i <= rem; i++) grid.innerHTML += `<div class="day-cell past"><div class="day-number inactive">${i}</div></div>`;
@@ -439,6 +490,19 @@ function showDayDetail(dateStr) {
   const wds = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   dateEl.textContent = wds[d.getDay()] + ' · ' + d.getDate() + ' ' + mos[d.getMonth()] + ' ' + d.getFullYear();
+
+  // Show public holiday badge if applicable
+  const holidayName = ID_HOLIDAYS[dateStr];
+  const existingBadge = $('dds-holiday-badge');
+  if (existingBadge) existingBadge.remove();
+  if (holidayName) {
+    const badge = document.createElement('div');
+    badge.id = 'dds-holiday-badge';
+    badge.style.cssText = 'background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;margin-top:4px;display:inline-block;';
+    badge.textContent = '🇮🇩 ' + holidayName;
+    dateEl.insertAdjacentElement('afterend', badge);
+  }
+
   const dayBkgs = (app.bookings||[]).filter(b => dateStr >= b.checkin && dateStr < b.checkout);
   const statusColor = s => s==='confirmed'?'var(--confirmed)':s==='awaiting'?'var(--awaiting)':s==='quotation'?'var(--quotation)':'var(--cancelled)';
   if (!dayBkgs.length) {
