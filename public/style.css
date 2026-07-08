@@ -1291,7 +1291,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .today-pill-wrap {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  left: 256px; /* sidebar=240px + 16px gap */
   z-index: 400;
   display: flex;
   background: #fff;
