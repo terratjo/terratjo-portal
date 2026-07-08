@@ -111,6 +111,10 @@
                         <span data-i18n="cal.su">SUN</span><span data-i18n="cal.mo">MON</span><span data-i18n="cal.tu">TUE</span><span data-i18n="cal.we">WED</span><span data-i18n="cal.th">THU</span><span data-i18n="cal.fr">FRI</span><span data-i18n="cal.sa">SAT</span>
                     </div>
                     <div class="days-grid" id="days-grid"></div>
+                    <!-- Today button floats over bottom-left of calendar grid -->
+                    <div class="today-pill-wrap" id="today-pill-fixed">
+                        <button class="today-pill-btn" id="btn-goto-today">Today</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -347,10 +351,6 @@
         <button class="lang-btn" data-lang="id" onclick="setLanguage('id')">ID</button>
     </div>
 
-    <!-- Today Button (calendar only, fixed bottom-left) -->
-    <div class="today-pill-wrap" id="today-pill-fixed" style="display:none;">
-        <button class="today-pill-btn" id="btn-goto-today">Today</button>
-    </div>
 
 
 </div><!-- end app-container -->
