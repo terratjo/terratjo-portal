@@ -633,6 +633,12 @@ window.applyBookingsFilter = applyBookingsFilter;
 
 $('btn-prev-month').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
 $('btn-next-month').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+$('btn-goto-today')?.addEventListener('click', () => {
+  const now = new Date(_todayJkt + 'T00:00:00');
+  calMonth = now.getMonth();
+  calYear = now.getFullYear();
+  renderCalendar();
+});
 
 // ── Tables ───────────────────────────────────────────────────────
 // ── Quotation status cell: countdown OR badge ───────────────────
