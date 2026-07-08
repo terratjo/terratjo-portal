@@ -1287,12 +1287,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   background: #c53030;
 }
 
-/* ── Today Pill Button (fixed, same level as lang-toggle) ─────────── */
+/* ── Today Pill Button (absolute inside calendar-container, matches lang-toggle level) ── */
+.calendar-container { position: relative; }
 .today-pill-wrap {
-  position: fixed;
+  position: absolute;
   bottom: 24px;
-  left: 185px;
-  z-index: 400;
+  left: 16px;
+  z-index: 10;
   display: flex;
   background: #fff;
   border: 1.5px solid var(--border);

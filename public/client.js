@@ -307,8 +307,6 @@ function navigate(pageId) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const el = document.querySelector(`[data-page="${pageId}"]`); if (el) el.classList.add('active');
   if (window.innerWidth <= 1000) closeSidebar();
-  const todayPill = $('today-pill-fixed');
-  if (todayPill) todayPill.style.display = pageId === 'calendar' ? 'flex' : 'none';
   prevPage = pageId;
 }
 // Search Logic
