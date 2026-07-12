@@ -371,9 +371,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── Start ─────────────────────────────────────────────────────────
 initDB()
   .then(() => {
-    app.listen(PORT, () => console.log(`🚀 Terratjo Portal running on http://localhost:${PORT}`));
     // Run expiry check immediately on boot, then every 10 minutes
     expireOldQuotations();
     setInterval(expireOldQuotations, 10 * 60 * 1000);
+    // Start server locally (Vercel handles this automatically in production)
+    if (!process.env.VERCEL) {
+      app.listen(PORT, () => console.log(`🚀 Terratjo Portal running on http://localhost:${PORT}`));
+    }
   })
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
+
+// Export for Vercel serverless
+module.exports = app;
