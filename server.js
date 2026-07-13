@@ -199,13 +199,27 @@ async function expireOldQuotations() {
 
 async function completeOldBookings() {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // Jakarta = UTC+7
+    const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const todayJakarta = jakartaNow.toISOString().split('T')[0];       // e.g. "2026-07-13"
+    const timeJakarta = jakartaNow.toISOString().split('T')[1].slice(0, 5); // e.g. "12:30"
+
+    // Mark completed if:
+    //   a) checkout date is already BEFORE today (Jakarta), OR
+    //   b) checkout date IS today (Jakarta) AND current Jakarta time >= booking's checkout_time
     const result = await db.execute({
-      sql: `UPDATE bookings SET status='completed' WHERE status='confirmed' AND checkout < ?`,
-      args: [today]
+      sql: `UPDATE bookings SET status='completed'
+            WHERE status='confirmed' AND (
+              checkout < ?
+              OR (
+                checkout = ? AND
+                REPLACE(COALESCE(NULLIF(checkout_time,''),'12:00'), '.', ':') <= ?
+              )
+            )`,
+      args: [todayJakarta, todayJakarta, timeJakarta]
     });
     if (result.rowsAffected > 0) {
-      console.log(`✅ Auto-completed ${result.rowsAffected} booking(s) past checkout date`);
+      console.log(`✅ Auto-completed ${result.rowsAffected} booking(s) (Jakarta time: ${todayJakarta} ${timeJakarta})`);
       broadcast({ type: 'sync', target: 'all' });
     }
   } catch (e) {
@@ -308,6 +322,7 @@ const mapBooking = row => ({
   promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||''
 });
 app.get('/api/bookings', auth, async (req, res) => {
+  await completeOldBookings(); // Run on every fetch — works reliably on Vercel serverless
   const { rows } = await db.execute('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(rows.map(mapBooking));
 });
 app.post('/api/bookings', auth, async (req, res) => {
