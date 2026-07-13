@@ -38,7 +38,7 @@ const LANG = {
       
     'th.guest':'GUEST', 'th.room':'ROOM', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'NIGHTS', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TYPE', 'th.dates':'DATES', 'th.rate':'RATE/NIGHT', 'th.desc':'Description', 'th.qty':'Quantity', 'th.amount':'Amount',
     'lbl.night':'night', 'lbl.nights':'nights', 'lbl.no_bookings':'No bookings found.', 'lbl.no_documents':'No documents found.',
-    'st.confirmed':'Confirmed', 'st.awaiting':'Awaiting Payment', 'st.quotation':'Quotation', 'st.cancelled':'Cancelled', 'st.expired':'Expired', 'st.invoice':'Invoice',
+    'st.confirmed':'Confirmed', 'st.awaiting':'Awaiting Payment', 'st.quotation':'Quotation', 'st.cancelled':'Cancelled', 'st.expired':'Expired', 'st.invoice':'Invoice', 'st.completed':'Completed',
     'rep.rev':'Total Revenue', 'rep.from_bookings':'from bookings', 'rep.confirmed':'Confirmed', 'rep.bookings':'bookings', 'rep.awaiting':'Awaiting Payment', 'rep.need_follow':'need follow-up', 'rep.quotations':'Quotations', 'rep.cancelled_exp':'cancelled/expired',
     'inv.max':'Max', 'inv.guests':'guests', 'inv.night':'night', 'inv.edit':'Edit', 'inv.delete':'Delete', 'inv.add_room':'Add Room',
     'cal.jan':'January', 'cal.feb':'February', 'cal.mar':'March', 'cal.apr':'April', 'cal.may':'May', 'cal.jun':'June', 'cal.jul':'July', 'cal.aug':'August', 'cal.sep':'September', 'cal.oct':'October', 'cal.nov':'November', 'cal.dec':'December',
@@ -93,7 +93,7 @@ const LANG = {
       
     'th.guest':'TAMU', 'th.room':'KAMAR', 'th.checkin':'CHECK-IN', 'th.checkout':'CHECK-OUT', 'th.nights':'MALAM', 'th.total':'TOTAL', 'th.status':'STATUS', 'th.type':'TIPE', 'th.dates':'TANGGAL', 'th.rate':'TARIF/MALAM', 'th.desc':'Deskripsi', 'th.qty':'Jumlah', 'th.amount':'Jumlah',
     'lbl.night':'malam', 'lbl.nights':'malam', 'lbl.no_bookings':'Tidak ada pemesanan ditemukan.', 'lbl.no_documents':'Tidak ada dokumen ditemukan.',
-    'st.confirmed':'Terkonfirmasi', 'st.awaiting':'Menunggu Pembayaran', 'st.quotation':'Penawaran', 'st.cancelled':'Dibatalkan', 'st.expired':'Kedaluwarsa', 'st.invoice':'Faktur',
+    'st.confirmed':'Terkonfirmasi', 'st.awaiting':'Menunggu Pembayaran', 'st.quotation':'Penawaran', 'st.cancelled':'Dibatalkan', 'st.expired':'Kedaluwarsa', 'st.invoice':'Faktur', 'st.completed':'Selesai',
     'rep.rev':'Total Pendapatan', 'rep.from_bookings':'dari pemesanan', 'rep.confirmed':'Terkonfirmasi', 'rep.bookings':'pemesanan', 'rep.awaiting':'Menunggu Pembayaran', 'rep.need_follow':'perlu ditindaklanjuti', 'rep.quotations':'Penawaran', 'rep.cancelled_exp':'dibatalkan/kedaluwarsa',
     'inv.max':'Maks', 'inv.guests':'tamu', 'inv.night':'malam', 'inv.edit':'Ubah', 'inv.delete':'Hapus', 'inv.add_room':'Tambah Kamar',
     'cal.jan':'Januari', 'cal.feb':'Februari', 'cal.mar':'Maret', 'cal.apr':'April', 'cal.may':'Mei', 'cal.jun':'Juni', 'cal.jul':'Juli', 'cal.aug':'Agustus', 'cal.sep':'September', 'cal.oct':'Oktober', 'cal.nov':'November', 'cal.dec':'Desember',
@@ -212,7 +212,7 @@ const promoStatus = p => { const today = todayStr; if (!p.startDate || !p.endDat
 const calcPromoDiscount = (promo, acc) => !promo ? 0 : promo.type === 'percentage' ? Math.round(acc * promo.value / 100) : Math.min(Number(promo.value), acc);
 
 function showToast(msg) { const toastEl = $('toast'); toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 2800); }
-function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired' }; const l = { confirmed:t('st.confirmed'), awaiting:t('st.awaiting'), quotation:t('st.quotation'), cancelled:t('st.cancelled'), expired:t('st.expired') }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
+function statusBadge(s) { const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired', completed:'badge-completed' }; const l = { confirmed:t('st.confirmed'), awaiting:t('st.awaiting'), quotation:t('st.quotation'), cancelled:t('st.cancelled'), expired:t('st.expired'), completed:t('st.completed') }; return `<span class="badge ${m[s]||''}">${l[s]||s}</span>`; }
 function typeBadge(typeVal) { return typeVal === 'quotation' ? `<span class="badge badge-quotation">${t('st.quotation')}</span>` : `<span class="badge badge-invoice">${t('st.invoice')}</span>`; }
 
 // ── Auth UI ─────────────────────────────────────────────────────

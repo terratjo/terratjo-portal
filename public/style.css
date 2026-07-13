@@ -163,6 +163,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .badge-cancelled::before{background:var(--cancelled);}
 .badge-expired{background:rgba(220,38,38,.12);color:#dc2626;}
 .badge-expired::before{background:#dc2626;}
+.badge-completed{background:rgba(15,118,110,.12);color:#0f766e;}
+.badge-completed::before{background:#0f766e;}
 .booking-expired{background:rgba(107,114,128,.15);color:#6b7280;}
 .btn-success{background:#16a34a;color:#fff;border-color:#16a34a;}
 .btn-success:hover{background:#15803d;border-color:#15803d;}

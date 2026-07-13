@@ -197,6 +197,22 @@ async function expireOldQuotations() {
   }
 }
 
+async function completeOldBookings() {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const result = await db.execute({
+      sql: `UPDATE bookings SET status='completed' WHERE status='confirmed' AND checkout < ?`,
+      args: [today]
+    });
+    if (result.rowsAffected > 0) {
+      console.log(`✅ Auto-completed ${result.rowsAffected} booking(s) past checkout date`);
+      broadcast({ type: 'sync', target: 'all' });
+    }
+  } catch (e) {
+    console.warn('Completion job error:', e.message);
+  }
+}
+
 
 // ── Settings ──────────────────────────────────────────────────────
 // Public endpoint – returns only the logo (no auth required)
@@ -372,8 +388,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 initDB()
   .then(() => {
     // Run expiry check immediately on boot, then every 10 minutes
+    // Run jobs immediately on boot, then on schedule
     expireOldQuotations();
     setInterval(expireOldQuotations, 10 * 60 * 1000);
+    completeOldBookings();
+    setInterval(completeOldBookings, 60 * 60 * 1000); // every hour
     // Start server locally (Vercel handles this automatically in production)
     if (!process.env.VERCEL) {
       app.listen(PORT, () => console.log(`🚀 Terratjo Portal running on http://localhost:${PORT}`));
