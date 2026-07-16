@@ -1033,6 +1033,17 @@ window.openIPM = function(id) {
   }
   $('ipm-t-grand').textContent = idr(grandTotal);
 
+  // Notes / Special Requests
+  const notesRow = $('ipm-notes-row');
+  if (notesRow) {
+    if (b.notes && b.notes.trim()) {
+      $('ipm-booking-notes').textContent = b.notes.trim();
+      notesRow.style.display = '';
+    } else {
+      notesRow.style.display = 'none';
+    }
+  }
+
   // Payment Method Display
   if (b.status === 'confirmed' && b.paymentMethod) {
     $('ipm-bank-name').innerHTML = `<strong>Method Used:</strong> ${b.paymentMethod}`;

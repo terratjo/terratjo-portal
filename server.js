@@ -165,18 +165,23 @@ const auth = (req, res, next) => {
 // ── Google Sheets Sync ────────────────────────────────────────────
 const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxDYikl_WDSKKqgTkdQ9-I4smcR2hyqcCEYwaSbHTDC184wLNiqyGlnv-7RHchxOIa23A/exec';
 async function syncToSheets(action, booking) {
-  if (!SHEETS_WEBHOOK) return null; // Skip if not configured
+  if (!SHEETS_WEBHOOK) return null;
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 8000); // 8s max
   try {
     const res = await fetch(SHEETS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...booking })
+      body: JSON.stringify({ action, ...booking }),
+      signal: controller.signal
     });
+    clearTimeout(tid);
     const result = await res.json();
-    console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`, JSON.stringify(result, null, 2));
+    console.log(`✅ Google Sheets synced: ${action} → ${booking.id}`);
     return result;
   } catch (e) {
-    console.warn('Google Sheets sync failed (non-critical):', e.message);
+    clearTimeout(tid);
+    console.warn('Google Sheets sync skipped (non-critical):', e.message);
     return null;
   }
 }
@@ -354,15 +359,19 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
   const r = await db.execute({ sql:`UPDATE bookings SET type=?,guest_name=?,guest_email=?,phone=?,address=?,num_guests=?,room_id=?,checkin=?,checkout=?,checkin_time=?,checkout_time=?,rate=?,cleaning_fee=?,additional_fee=?,deposit=?,tax=?,status=?,notes=?,promo_id=?,source=?,payment_method=? WHERE id=?`,
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',paymentMethod||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  // Respond immediately — don't wait for Sheets sync (Vercel 10s limit)
+  broadcast({ type:'sync', target:'all' }); res.json({ success: true });
+  // Fire-and-forget sync to Google Sheets after response
   if (status === 'confirmed') {
     let roomNameStr = room;
     try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
-    const syncResult = await syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64});
-      if (syncResult && syncResult.paymentProofUrl) {
-        await db.execute({ sql: 'UPDATE bookings SET payment_proof_url=? WHERE id=?', args: [syncResult.paymentProofUrl, req.params.id] });
-      }
+    syncToSheets('confirmed', {id:req.params.id,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0,paymentInfo:paymentMethod||'',paymentProofBase64})
+      .then(syncResult => {
+        if (syncResult && syncResult.paymentProofUrl) {
+          db.execute({ sql: 'UPDATE bookings SET payment_proof_url=? WHERE id=?', args: [syncResult.paymentProofUrl, req.params.id] }).catch(() => {});
+        }
+      }).catch(e => console.warn('Sheets sync error:', e.message));
   }
-  broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
 app.delete('/api/bookings/:id', auth, async (req, res) => {
   const r = await db.execute({ sql:'UPDATE bookings SET status=? WHERE id=?', args:['cancelled',req.params.id] });

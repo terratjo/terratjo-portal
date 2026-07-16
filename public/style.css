@@ -276,6 +276,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .ipm-rate-field:focus{outline:none;}
 
 /* Payment row */
+.ipm-notes-row{padding:10px 0 4px;}
+.ipm-notes-box{background:#fffbeb;border-left:4px solid #f59e0b;border-radius:4px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.5;}
+.ipm-notes-box strong{color:#92400e;margin-right:6px;}
 .ipm-payment-row{display:flex;justify-content:space-between;gap:20px;padding:14px 0 10px;border-top:1px solid var(--border);}
 .ipm-payment-info strong,.ipm-contact-info strong{display:block;font-size:11px;font-weight:700;margin-bottom:5px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.4px;}
 .ipm-payment-info p,.ipm-contact-info p{font-size:12px;color:var(--text-mid);margin-bottom:2px;}
