@@ -1,0 +1,13 @@
+# This is a private internal portal — do not index
+User-agent: *
+Disallow: /
+
+# Explicitly block major crawlers
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: facebot
+Disallow: /

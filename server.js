@@ -405,6 +405,12 @@ app.get('/favicon.ico', (req, res) => serveLogo(req, res, 'favicon.png'));
 app.get('/apple-touch-icon.png', (req, res) => serveLogo(req, res, 'favicon.png'));
 app.get('/apple-touch-icon-precomposed.png', (req, res) => serveLogo(req, res, 'favicon.png'));
 
+// ── Privacy: block all search engine indexing ─────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+  next();
+});
+
 // ── Serve Frontend ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
