@@ -162,8 +162,14 @@ async function apiFetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API}${path}`, { ...options, headers });
-  if (res.status === 401 || res.status === 403) { logout(); return; }
-  if (!res.ok) throw new Error(await res.text());
+  // For session-protected routes, 401/403 means session expired → logout
+  // For /auth routes (login), 401 just means wrong credentials → throw so catch can show message
+  if ((res.status === 401 || res.status === 403) && !path.startsWith('/auth')) { logout(); return; }
+  if (!res.ok) {
+    let errMsg = 'Request failed';
+    try { const j = await res.json(); errMsg = j.error || j.message || errMsg; } catch { errMsg = await res.text().catch(() => errMsg); }
+    throw new Error(errMsg);
+  }
   return res.json();
 }
 const api = {
@@ -229,11 +235,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!username || !password) { showToast('Please enter username and password.'); return; }
     try {
       const res = await api.post('/auth/login', { username, password });
+      if (!res || !res.token) { showToast('Wrong username or password. Please try again.'); return; }
       token = res.token;
       localStorage.setItem('terratjo_token', token);
       $('login-overlay').classList.remove('active');
       initApp();
-    } catch (e) { showToast('Login failed: ' + e.message); }
+    } catch (e) {
+      const msg = (e.message||'').toLowerCase().includes('invalid credentials') || (e.message||'').toLowerCase().includes('wrong')
+        ? 'Wrong username or password. Please try again.'
+        : 'Login failed. Please check your connection and try again.';
+      showToast(msg);
+    }
   }
 
   // Click the Sign In button
