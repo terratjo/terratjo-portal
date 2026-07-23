@@ -1450,6 +1450,12 @@ $('payment-proof-file')?.addEventListener('change', function() {
     const tot = calcTotal(b);
     const st  = effStatus(b);
     const sc  = STATUS_CFG[st] || { bg:'#f1f5f9', color:'#334155', dot:'#64748b', label: st };
+    const promo = b.promoId ? (app.promos||[]).find(p => p.id === b.promoId) : null;
+    const promoHtml = promo
+      ? `<div class="btt-promo">🏷️ ${promo.name||promo.code||'Promo'} &nbsp;${
+          promo.type==='percentage' ? `<span>-${promo.value}%</span>` : `<span>-${idr(Number(promo.value))}</span>`
+        }</div>`
+      : '';
     const notes = b.notes && b.notes.trim()
       ? `<div class="btt-notes">"${b.notes.trim().slice(0,90)}${b.notes.length>90?'…':''}"</div>`
       : '';
@@ -1466,6 +1472,7 @@ $('payment-proof-file')?.addEventListener('change', function() {
       <div class="btt-meta"><span class="btt-meta-icon">🌙</span>${n} ${n===1?'night':'nights'}</div>
       ${b.guestEmail ? `<div class="btt-meta"><span class="btt-meta-icon">✉️</span>${b.guestEmail}</div>` : ''}
       <hr class="btt-divider">
+      ${promoHtml}
       <div class="btt-total">${idr(tot)}</div>
       ${notes}
       <button class="btt-view-btn" onclick="hideBookingTooltip();openIPM('${b.id}')">View Details →</button>`;
