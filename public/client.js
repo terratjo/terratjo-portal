@@ -1516,6 +1516,9 @@ $('payment-proof-file')?.addEventListener('change', function() {
 
   // Delegated mousemove — safe to attach to document immediately
   document.addEventListener('mousemove', e => {
+    const tip = getTip();
+    // If cursor is inside the tooltip, keep it alive
+    if (tip && tip.contains(e.target)) { clearTimeout(_hideTimer); return; }
     const el = e.target.closest('[data-bid]');
     if (!el) { if (_bid) window.hideBookingTooltip(); return; }
     clearTimeout(_hideTimer);
