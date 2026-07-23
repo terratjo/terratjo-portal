@@ -1443,6 +1443,9 @@ $('payment-proof-file')?.addEventListener('change', function() {
     expired:    { bg:'rgba(220,38,38,.12)', color:'#b91c1c', dot:'#dc2626', label:'Expired' },
   };
 
+  // Lazy lookup — tooltip div is parsed AFTER this script runs
+  const getTip = () => document.getElementById('booking-tooltip');
+
   function buildTip(b) {
     const n    = nightsCount(b.checkin, b.checkout);
     const tot  = calcTotal(b);
@@ -1470,9 +1473,9 @@ $('payment-proof-file')?.addEventListener('change', function() {
   }
 
   let _bid = null, _hideTimer = null;
-  const tip = $('booking-tooltip');
 
   function show(bid, cx, cy) {
+    const tip = getTip();
     if (!tip || !app.bookings) return;
     clearTimeout(_hideTimer);
     if (_bid !== bid) {
@@ -1482,7 +1485,6 @@ $('payment-proof-file')?.addEventListener('change', function() {
       tip.innerHTML = buildTip(b);
     }
     tip.classList.add('btt-visible');
-    // Smart positioning — avoid viewport edges
     const tw = 292, th = tip.offsetHeight || 260;
     const vw = window.innerWidth, vh = window.innerHeight;
     let left = cx + 20;
@@ -1498,16 +1500,21 @@ $('payment-proof-file')?.addEventListener('change', function() {
   window.hideBookingTooltip = function() {
     clearTimeout(_hideTimer);
     _hideTimer = setTimeout(() => {
+      const tip = getTip();
       if (tip) tip.classList.remove('btt-visible');
       _bid = null;
     }, 100);
   };
 
-  // Keep tooltip alive when cursor moves into it
-  tip?.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
-  tip?.addEventListener('mouseleave', window.hideBookingTooltip);
+  // Attach tooltip hover listeners after DOM is fully parsed
+  document.addEventListener('DOMContentLoaded', () => {
+    const tip = getTip();
+    if (!tip) return;
+    tip.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+    tip.addEventListener('mouseleave', window.hideBookingTooltip);
+  });
 
-  // Single delegated listener on document (efficient — only fires on mouse move)
+  // Delegated mousemove — safe to attach to document immediately
   document.addEventListener('mousemove', e => {
     const el = e.target.closest('[data-bid]');
     if (!el) { if (_bid) window.hideBookingTooltip(); return; }
@@ -1515,3 +1522,4 @@ $('payment-proof-file')?.addEventListener('change', function() {
     show(el.dataset.bid, e.clientX, e.clientY);
   });
 })();
+
