@@ -1443,14 +1443,13 @@ $('payment-proof-file')?.addEventListener('change', function() {
     expired:    { bg:'rgba(220,38,38,.12)', color:'#b91c1c', dot:'#dc2626', label:'Expired' },
   };
 
-  // Lazy lookup — tooltip div is parsed AFTER this script runs
   const getTip = () => document.getElementById('booking-tooltip');
 
   function buildTip(b) {
-    const n    = nightsCount(b.checkin, b.checkout);
-    const tot  = calcTotal(b);
-    const st   = effStatus(b);
-    const sc   = STATUS_CFG[st] || { bg:'#f1f5f9', color:'#334155', dot:'#64748b', label: st };
+    const n   = nightsCount(b.checkin, b.checkout);
+    const tot = calcTotal(b);
+    const st  = effStatus(b);
+    const sc  = STATUS_CFG[st] || { bg:'#f1f5f9', color:'#334155', dot:'#64748b', label: st };
     const notes = b.notes && b.notes.trim()
       ? `<div class="btt-notes">"${b.notes.trim().slice(0,90)}${b.notes.length>90?'…':''}"</div>`
       : '';
@@ -1472,57 +1471,96 @@ $('payment-proof-file')?.addEventListener('change', function() {
       <button class="btt-view-btn" onclick="hideBookingTooltip();openIPM('${b.id}')">View Details →</button>`;
   }
 
-  let _bid = null, _hideTimer = null;
+  let _bid = null, _hideTimer = null, _switchTimer = null;
 
-  function show(bid, cx, cy) {
-    const tip = getTip();
-    if (!tip || !app.bookings) return;
-    clearTimeout(_hideTimer);
-    if (_bid !== bid) {
-      _bid = bid;
-      const b = app.bookings.find(x => x.id === bid);
-      if (!b) return;
-      tip.innerHTML = buildTip(b);
-    }
-    tip.classList.add('btt-visible');
-    const tw = 292, th = tip.offsetHeight || 260;
+  function placeAt(tip, cx, cy) {
+    const tw = 292, th = tip.offsetHeight || 280;
     const vw = window.innerWidth, vh = window.innerHeight;
-    let left = cx + 20;
-    let top  = cy - 12;
-    if (left + tw > vw - 12)  left = cx - tw - 20;
-    if (left < 8)             left = 8;
-    if (top + th > vh - 12)   top  = vh - th - 12;
-    if (top < 8)              top  = 8;
+    let left = cx + 22;
+    let top  = cy - Math.round(th / 2);
+    if (left + tw > vw - 10) left = cx - tw - 22;
+    if (left < 8) left = 8;
+    if (top + th > vh - 10) top = vh - th - 10;
+    if (top < 8) top = 8;
     tip.style.left = left + 'px';
     tip.style.top  = top  + 'px';
   }
 
+  function renderTip(bid, cx, cy) {
+    const tip = getTip();
+    if (!tip || !app.bookings) return;
+    const b = app.bookings.find(x => x.id === bid);
+    if (!b) return;
+    _bid = bid;
+    tip.innerHTML = buildTip(b);
+    placeAt(tip, cx, cy);
+    tip.classList.add('btt-visible');
+  }
+
   window.hideBookingTooltip = function() {
     clearTimeout(_hideTimer);
+    clearTimeout(_switchTimer);
     _hideTimer = setTimeout(() => {
       const tip = getTip();
       if (tip) tip.classList.remove('btt-visible');
       _bid = null;
-    }, 100);
+    }, 150);
   };
 
-  // Attach tooltip hover listeners after DOM is fully parsed
+  // Keep tooltip alive when cursor is inside it
   document.addEventListener('DOMContentLoaded', () => {
     const tip = getTip();
     if (!tip) return;
-    tip.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+    tip.addEventListener('mouseenter', () => { clearTimeout(_hideTimer); clearTimeout(_switchTimer); });
     tip.addEventListener('mouseleave', window.hideBookingTooltip);
   });
 
-  // Delegated mousemove — safe to attach to document immediately
-  document.addEventListener('mousemove', e => {
+  // Use mouseover (bubbles) for delegation — fires once when entering element
+  document.addEventListener('mouseover', e => {
     const tip = getTip();
-    // If cursor is inside the tooltip, keep it alive
-    if (tip && tip.contains(e.target)) { clearTimeout(_hideTimer); return; }
+    // Cursor entered the tooltip — cancel any pending actions
+    if (tip && tip.contains(e.target)) {
+      clearTimeout(_hideTimer);
+      clearTimeout(_switchTimer);
+      return;
+    }
     const el = e.target.closest('[data-bid]');
-    if (!el) { if (_bid) window.hideBookingTooltip(); return; }
+    if (!el) return;
+
+    const bid = el.dataset.bid;
     clearTimeout(_hideTimer);
-    show(el.dataset.bid, e.clientX, e.clientY);
+
+    if (_bid === bid) {
+      // Re-entering same row — just keep visible, no reposition
+      if (tip) tip.classList.add('btt-visible');
+      return;
+    }
+
+    if (!_bid) {
+      // No tooltip showing — show immediately at cursor entry point
+      renderTip(bid, e.clientX, e.clientY);
+    } else {
+      // Already showing a different booking — debounce 350ms before switching
+      // This lets the cursor pass briefly over another row en route to the tooltip
+      clearTimeout(_switchTimer);
+      _switchTimer = setTimeout(() => {
+        renderTip(bid, e.clientX, e.clientY);
+      }, 350);
+    }
+  });
+
+  // Use mouseout to detect leaving rows
+  document.addEventListener('mouseout', e => {
+    const going = e.relatedTarget;
+    const tip = getTip();
+    // Cursor moving into tooltip — keep alive
+    if (tip && going && tip.contains(going)) return;
+    // Cursor moving into another [data-bid] row — mouseover will handle it
+    if (going && going.closest && going.closest('[data-bid]')) return;
+    // Leaving a [data-bid] row for an unrelated area — hide
+    if (e.target.closest && e.target.closest('[data-bid]')) {
+      window.hideBookingTooltip();
+    }
   });
 })();
 
