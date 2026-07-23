@@ -285,6 +285,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .ipm-contact-info{text-align:right;}
 .ipm-footer-msg{text-align:center;font-size:12px;color:var(--text-light);padding-top:12px;border-top:1px solid var(--border);margin-top:4px;font-style:italic;}
 
+/* ── Booking Hover Tooltip ──────────────────────────────────────────── */
+#booking-tooltip{position:fixed;z-index:99999;width:276px;background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08);padding:16px;pointer-events:none;opacity:0;transform:scale(.94) translateY(6px);transition:opacity .16s ease,transform .16s ease;border:1px solid rgba(0,0,0,.07);}
+#booking-tooltip.btt-visible{opacity:1;transform:scale(1) translateY(0);pointer-events:auto;}
+.btt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.btt-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.btt-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.btt-id{font-size:11px;color:#94a3b8;font-weight:500;white-space:nowrap;}
+.btt-name{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px;line-height:1.2;word-break:break-word;}
+.btt-meta{display:flex;align-items:center;gap:7px;font-size:12px;color:#475569;margin-bottom:4px;line-height:1.4;}
+.btt-meta-icon{font-size:13px;flex-shrink:0;width:16px;text-align:center;}
+.btt-divider{border:none;border-top:1px solid #f1f5f9;margin:10px 0;}
+.btt-total{font-size:17px;font-weight:800;color:var(--primary,#ffc823);margin-bottom:10px;letter-spacing:-.3px;}
+.btt-notes{font-size:11px;color:#78716c;font-style:italic;background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 9px;border-radius:4px;margin-bottom:10px;line-height:1.5;word-break:break-word;}
+.btt-view-btn{display:block;width:100%;padding:9px 0;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.2px;transition:background .15s,color .15s;}
+.btt-view-btn:hover{background:var(--primary,#ffc823);color:#0f172a;}
+
 /* IPM footer actions */
 .ipm-actions{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:#fff;flex-shrink:0;flex-wrap:wrap;}
 .ipm-actions .btn-outline{margin-right:auto;}

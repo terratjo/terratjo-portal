@@ -697,7 +697,7 @@ function renderBookings(filter) {
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
@@ -715,7 +715,7 @@ function renderInvoices(filter) {
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
     const es = effStatus(b);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
@@ -754,7 +754,7 @@ function renderReports(filter) {
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
   $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
 }
@@ -1431,3 +1431,87 @@ $('payment-proof-file')?.addEventListener('change', function() {
       p.innerHTML = `Drag & drop a file or <span>browse</span>`;
   }
 });
+
+// ── Booking Hover Tooltip ─────────────────────────────────────────
+(function() {
+  const STATUS_CFG = {
+    confirmed:  { bg:'#dcfce7', color:'#166534', dot:'#16a34a',  label:'Confirmed' },
+    awaiting:   { bg:'rgba(217,119,6,.12)', color:'#92400e', dot:'#d97706', label:'Awaiting Payment' },
+    quotation:  { bg:'rgba(37,99,235,.1)',  color:'#1e40af', dot:'#2563eb', label:'Quotation' },
+    completed:  { bg:'rgba(15,118,110,.12)',color:'#0f766e', dot:'#0f766e', label:'Completed' },
+    cancelled:  { bg:'rgba(220,38,38,.08)', color:'#b91c1c', dot:'#dc2626', label:'Cancelled' },
+    expired:    { bg:'rgba(220,38,38,.12)', color:'#b91c1c', dot:'#dc2626', label:'Expired' },
+  };
+
+  function buildTip(b) {
+    const n    = nightsCount(b.checkin, b.checkout);
+    const tot  = calcTotal(b);
+    const st   = effStatus(b);
+    const sc   = STATUS_CFG[st] || { bg:'#f1f5f9', color:'#334155', dot:'#64748b', label: st };
+    const notes = b.notes && b.notes.trim()
+      ? `<div class="btt-notes">"${b.notes.trim().slice(0,90)}${b.notes.length>90?'…':''}"</div>`
+      : '';
+    return `
+      <div class="btt-header">
+        <span class="btt-status" style="background:${sc.bg};color:${sc.color};">
+          <span class="btt-dot" style="background:${sc.dot};"></span>${sc.label}
+        </span>
+        <span class="btt-id">${b.id}</span>
+      </div>
+      <div class="btt-name">${b.guestName}</div>
+      <div class="btt-meta"><span class="btt-meta-icon">🏠</span>${getRoomName(b.room)}</div>
+      <div class="btt-meta"><span class="btt-meta-icon">📅</span>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</div>
+      <div class="btt-meta"><span class="btt-meta-icon">🌙</span>${n} ${n===1?'night':'nights'}</div>
+      ${b.guestEmail ? `<div class="btt-meta"><span class="btt-meta-icon">✉️</span>${b.guestEmail}</div>` : ''}
+      <hr class="btt-divider">
+      <div class="btt-total">${idr(tot)}</div>
+      ${notes}
+      <button class="btt-view-btn" onclick="hideBookingTooltip();openIPM('${b.id}')">View Details →</button>`;
+  }
+
+  let _bid = null, _hideTimer = null;
+  const tip = $('booking-tooltip');
+
+  function show(bid, cx, cy) {
+    if (!tip || !app.bookings) return;
+    clearTimeout(_hideTimer);
+    if (_bid !== bid) {
+      _bid = bid;
+      const b = app.bookings.find(x => x.id === bid);
+      if (!b) return;
+      tip.innerHTML = buildTip(b);
+    }
+    tip.classList.add('btt-visible');
+    // Smart positioning — avoid viewport edges
+    const tw = 292, th = tip.offsetHeight || 260;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let left = cx + 20;
+    let top  = cy - 12;
+    if (left + tw > vw - 12)  left = cx - tw - 20;
+    if (left < 8)             left = 8;
+    if (top + th > vh - 12)   top  = vh - th - 12;
+    if (top < 8)              top  = 8;
+    tip.style.left = left + 'px';
+    tip.style.top  = top  + 'px';
+  }
+
+  window.hideBookingTooltip = function() {
+    clearTimeout(_hideTimer);
+    _hideTimer = setTimeout(() => {
+      if (tip) tip.classList.remove('btt-visible');
+      _bid = null;
+    }, 100);
+  };
+
+  // Keep tooltip alive when cursor moves into it
+  tip?.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+  tip?.addEventListener('mouseleave', window.hideBookingTooltip);
+
+  // Single delegated listener on document (efficient — only fires on mouse move)
+  document.addEventListener('mousemove', e => {
+    const el = e.target.closest('[data-bid]');
+    if (!el) { if (_bid) window.hideBookingTooltip(); return; }
+    clearTimeout(_hideTimer);
+    show(el.dataset.bid, e.clientX, e.clientY);
+  });
+})();
