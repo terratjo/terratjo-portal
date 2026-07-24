@@ -697,7 +697,7 @@ function renderBookings(filter) {
   if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-light)">No bookings found.</td></tr>`; return; }
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="handleRowClick('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('bookings-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#bookings-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBookings(e.target.dataset.filter); });
@@ -715,7 +715,7 @@ function renderInvoices(filter) {
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
     const es = effStatus(b);
-    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="handleRowClick('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div></td><td>${shortDate(b.checkin)} → ${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td class="td-bold">${idr(calcTotal(b))}</td><td>${typeBadge(b.type)}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
 }
 $('invoices-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#invoices-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderInvoices(e.target.dataset.filter); });
@@ -754,7 +754,7 @@ function renderReports(filter) {
   tb.innerHTML = '';
   rows.forEach(b => {
     const n = nightsCount(b.checkin, b.checkout);
-    tb.innerHTML += `<tr data-bid="${b.id}" onclick="openIPM('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
+    tb.innerHTML += `<tr data-bid="${b.id}" onclick="handleRowClick('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
   $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
 }
@@ -1475,7 +1475,7 @@ $('payment-proof-file')?.addEventListener('change', function() {
       ${promoHtml}
       <div class="btt-total">${idr(tot)}</div>
       ${notes}
-      <button class="btt-view-btn" onclick="hideBookingTooltip();openIPMDirect('${b.id}')">View Details →</button>`;
+      <button class="btt-view-btn" onclick="hideBookingTooltip();openIPM('${b.id}')">View Details →</button>`;
   }
 
   let _bid = null, _hideTimer = null, _switchTimer = null;
@@ -1570,12 +1570,10 @@ $('payment-proof-file')?.addEventListener('change', function() {
     }
   });
 
-  // ── Mobile / touch: wrap openIPM so row taps show tooltip first ─────
-  // We cannot reliably block the inline onclick with capture phase on all
-  // mobile browsers, so instead we wrap window.openIPM itself.
-  // DOMContentLoaded fires in order → this runs AFTER the main callback
-  // that defines openIPM, so _origIPM is valid.
-  const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // ── Mobile / touch: handleRowClick replaces openIPM on table rows ──────
+  // Defined directly in IIFE (no DOMContentLoaded dependency) so it's
+  // always available when inline onclick fires.
+  const isMobileTouch = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function mobilePlaceAt(tip) {
     const tw = Math.min(292, window.innerWidth - 24);
@@ -1586,50 +1584,50 @@ $('payment-proof-file')?.addEventListener('change', function() {
     tip.style.top   = top  + 'px';
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const _origIPM = window.openIPM;
-    if (!_origIPM) return;
+  // Called by: onclick="handleRowClick('...')" on every booking table row
+  window.handleRowClick = function(id) {
+    if (!isMobileTouch()) {
+      // Desktop — open the full preview modal normally
+      if (window.openIPM) window.openIPM(id);
+      return;
+    }
 
-    // openIPMDirect: called by "View Details" — skips mobile intercept
-    window.openIPMDirect = _origIPM;
+    const tip = getTip();
+    clearTimeout(_hideTimer);
+    clearTimeout(_switchTimer);
 
-    // Replace openIPM with mobile-aware version
-    window.openIPM = function(id) {
-      if (!isTouchDevice()) { _origIPM(id); return; } // desktop — normal
-
-      const tip = getTip();
-      clearTimeout(_hideTimer); clearTimeout(_switchTimer);
-
-      if (_bid === id && tip && tip.classList.contains('btt-visible')) {
-        // 2nd tap on same booking row → close tooltip, do NOT open IPM
-        tip.classList.remove('btt-visible');
-        _bid = null;
-        return;
-      }
-
-      // 1st tap (or different row) → show tooltip, do NOT open IPM
-      const b = app.bookings && app.bookings.find(x => x.id === id);
-      if (!b || !tip) { _origIPM(id); return; } // fallback: no data found
-      if (tip.classList.contains('btt-visible')) {
-        tip.classList.remove('btt-visible'); _bid = null;
-      }
-      _bid = id;
-      tip.innerHTML = buildTip(b);
-      mobilePlaceAt(tip);
-      tip.classList.add('btt-visible');
-      // Intentionally NOT calling _origIPM — tooltip replaces modal on 1st tap
-    };
-
-    // Dismiss tooltip when tapping anywhere outside a row or the tooltip
-    document.addEventListener('click', e => {
-      if (!isTouchDevice()) return;
-      const tip = getTip();
-      if (!tip || !_bid) return;
-      if (tip.contains(e.target)) return;  // inside tooltip — let through
-      if (e.target.closest && e.target.closest('[data-bid]')) return; // row → openIPM handles
+    if (_bid === id && tip && tip.classList.contains('btt-visible')) {
+      // 2nd tap on same row → dismiss tooltip
       tip.classList.remove('btt-visible');
       _bid = null;
-    });
+      return;
+    }
+
+    // 1st tap (or different row) → show tooltip, do NOT open IPM
+    const b = app.bookings && app.bookings.find(x => x.id === id);
+    if (!b || !tip) {
+      // Fallback: no data, just open normally
+      if (window.openIPM) window.openIPM(id);
+      return;
+    }
+    if (tip.classList.contains('btt-visible')) {
+      tip.classList.remove('btt-visible');
+      _bid = null;
+    }
+    _bid = id;
+    tip.innerHTML = buildTip(b);
+    mobilePlaceAt(tip);
+    tip.classList.add('btt-visible');
+  };
+
+  // Dismiss tooltip when tapping anywhere outside a row or the tooltip
+  document.addEventListener('click', e => {
+    if (!isMobileTouch()) return;
+    const tip = getTip();
+    if (!tip || !_bid) return;
+    if (tip.contains(e.target)) return;                           // inside tooltip — allow
+    if (e.target.closest && e.target.closest('[data-bid]')) return; // row — handleRowClick handles
+    tip.classList.remove('btt-visible');
+    _bid = null;
   });
 })();
-
