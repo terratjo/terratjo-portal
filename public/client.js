@@ -1569,5 +1569,66 @@ $('payment-proof-file')?.addEventListener('change', function() {
       window.hideBookingTooltip();
     }
   });
+
+  // ── Mobile / touch: intercept click on [data-bid] rows ─────────────
+  // On touch devices, a tap fires mouseover + click together.
+  // We use capture phase (runs before inline onclick) to take control:
+  //   • 1st tap on a row  → show tooltip, block openIPM
+  //   • 2nd tap same row  → hide tooltip, block openIPM
+  //   • Tap "View Details"→ allowed (tip.contains check)
+  //   • Tap outside       → dismiss tooltip
+  const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+  function mobilePlaceAt(tip) {
+    // Centre the tooltip horizontally, near the top-centre of the viewport
+    const tw = Math.min(292, window.innerWidth - 24);
+    const left = Math.round((window.innerWidth - tw) / 2);
+    const top  = Math.round(window.innerHeight * 0.18);
+    tip.style.width = tw + 'px';
+    tip.style.left  = left + 'px';
+    tip.style.top   = top  + 'px';
+  }
+
+  document.addEventListener('click', e => {
+    if (!isTouchDevice()) return;   // desktop — do nothing here
+    const tip = getTip();
+
+    // Tapping inside the tooltip (e.g. "View Details") — let it through
+    if (tip && tip.contains(e.target)) return;
+
+    const el = e.target.closest('[data-bid]');
+
+    // Tapping completely outside any row or tooltip → dismiss
+    if (!el) {
+      if (_bid) {
+        clearTimeout(_hideTimer); clearTimeout(_switchTimer);
+        if (tip) tip.classList.remove('btt-visible');
+        _bid = null;
+      }
+      return;
+    }
+
+    // We're tapping a [data-bid] row — take full control
+    e.stopImmediatePropagation();
+    e.preventDefault();
+
+    const bid = el.dataset.bid;
+
+    if (_bid === bid && tip && tip.classList.contains('btt-visible')) {
+      // 2nd tap on same row → dismiss tooltip
+      clearTimeout(_hideTimer); clearTimeout(_switchTimer);
+      tip.classList.remove('btt-visible');
+      _bid = null;
+    } else {
+      // 1st tap (or different row) → show tooltip, do NOT open IPM
+      clearTimeout(_hideTimer); clearTimeout(_switchTimer);
+      const b = app.bookings && app.bookings.find(x => x.id === bid);
+      if (!b || !tip) return;
+      _bid = bid;
+      tip.innerHTML = buildTip(b);
+      mobilePlaceAt(tip);
+      tip.classList.add('btt-visible');
+    }
+  }, true); // capture=true so we run before inline onclick="openIPM(...)"
 })();
 
