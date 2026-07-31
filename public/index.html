@@ -58,6 +58,7 @@
             <div class="nav-section">
                 <h3 data-i18n="nav.header.property">PROPERTY</h3>
                 <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> <span data-i18n="nav.inventory">Inventory</span></a>
+                <a href="#" class="nav-item" data-page="guests"><i data-lucide="users"></i> <span>Guests Data</span></a>
                 <a href="#" class="nav-item" data-page="settings"><i data-lucide="settings"></i> <span data-i18n="nav.settings">Settings</span></a>
             </div>
 
@@ -209,6 +210,37 @@
                     <button class="btn btn-primary" id="btn-add-room"><i data-lucide="plus"></i> <span data-i18n="inv.add_room">Add Room</span></button>
                 </div>
                 <div class="rooms-list" id="rooms-list"></div>
+            </div>
+        </main>
+
+        <!-- PAGE: GUESTS DATA -->
+        <main class="page-content hidden" id="page-guests">
+            <div class="section-container">
+                <div class="inventory-header">
+                    <div>
+                        <h2>Guests Data</h2>
+                        <p style="color:var(--text-light);font-size:13px;margin-top:2px;">All guests captured from bookings &amp; quotations</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openGuestModal(null)"><i data-lucide="user-plus"></i> Add Guest</button>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <input type="text" id="guest-search" class="search-input-inline" placeholder="&#128269; Search by name, email or phone..." oninput="renderGuests(this.value)" style="width:100%;max-width:420px;padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);outline:none;">
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>GUEST NAME</th>
+                                <th>EMAIL</th>
+                                <th>PHONE</th>
+                                <th>FIRST CREATED</th>
+                                <th>LAST STAY</th>
+                                <th style="text-align:center">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guests-tbody"></tbody>
+                    </table>
+                </div>
             </div>
         </main>
 
@@ -405,27 +437,30 @@
             <form id="booking-form" autocomplete="off">
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="form.name">GUEST FULL NAME</label>
-                        <input type="text" id="form-name" placeholder="e.g. Maria Santos" required>
+                        <label data-i18n="form.name">GUEST FULL NAME <span style="color:#ef4444">*</span></label>
+                        <div class="guest-ac-wrap" style="position:relative;">
+                            <input type="text" id="form-name" placeholder="e.g. Maria Santos" required autocomplete="off">
+                            <div id="guest-ac-list" class="guest-ac-list"></div>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="form.email">EMAIL</label>
-                        <input type="email" id="form-email" placeholder="guest@email.com">
+                        <label data-i18n="form.email">EMAIL <span style="color:#ef4444">*</span></label>
+                        <input type="email" id="form-email" placeholder="guest@email.com" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="form.phone">PHONE / WHATSAPP</label>
-                        <input type="text" id="form-phone" placeholder="+62 …">
+                        <label data-i18n="form.phone">PHONE / WHATSAPP <span style="color:#ef4444">*</span></label>
+                        <input type="text" id="form-phone" placeholder="+62 …" required>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="form.guests">NO. OF GUESTS</label>
-                        <input type="number" id="form-guests" value="1" min="1">
+                        <label data-i18n="form.guests">NO. OF GUESTS <span style="color:#ef4444">*</span></label>
+                        <input type="number" id="form-guests" value="1" min="1" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="form.address">GUEST ADDRESS</label>
-                    <input type="text" id="form-address" placeholder="Street, City, Country">
+                    <label data-i18n="form.address">GUEST ADDRESS <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="form-address" placeholder="Street, City, Country" required>
                 </div>
                 <div class="form-group">
                     <label data-i18n="form.room">ROOM</label>
@@ -828,7 +863,37 @@
     </button>
 </nav>
 
-<!-- ── Booking Hover Tooltip ──────────────────────────────────── -->
+<!-- ── Guest Edit Modal ────────────────────────────────────────── -->
+<div class="modal-overlay" id="guest-modal">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h3 id="guest-modal-title">Add Guest</h3>
+            <button class="btn-icon" onclick="$('guest-modal').classList.remove('active')"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="guest-form">
+                <div class="form-group">
+                    <label>FULL NAME <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="gf-name" required placeholder="Guest full name">
+                </div>
+                <div class="form-group">
+                    <label>EMAIL</label>
+                    <input type="email" id="gf-email" placeholder="guest@email.com">
+                </div>
+                <div class="form-group">
+                    <label>PHONE / WHATSAPP</label>
+                    <input type="text" id="gf-phone" placeholder="+62 ...">
+                </div>
+                <div class="form-actions" style="margin-top:8px;">
+                    <button type="button" class="btn btn-outline" onclick="$('guest-modal').classList.remove('active')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="guest-form-submit">Save Guest</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Booking Hover Tooltip ──────────────────────────────────────── -->
 <div id="booking-tooltip" role="tooltip" aria-hidden="true"></div>
 
 </body>

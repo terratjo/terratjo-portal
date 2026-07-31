@@ -1,6 +1,6 @@
 // ── Auth & State ────────────────────────────────────────────────
 const API = '/api';
-const app = { settings: {}, rooms: [], bookings: [], promos: [] };
+const app = { settings: {}, rooms: [], bookings: [], promos: [], guests: [] };
 let token = localStorage.getItem('terratjo_token');
 let currentFormAction = 'booking', currentIPMId = null, prevPage = 'calendar', lastAction = 'booking';
 // Get today's date in Jakarta / WIB (UTC+7) — Intl.DateTimeFormat is the only reliable cross-browser method
@@ -313,6 +313,7 @@ function navigate(pageId) {
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (pageId === 'reports') renderReports('all');
   if (pageId === 'inventory') renderInventory();
+  if (pageId === 'guests') renderGuests($('guest-search')?.value || '');
   if (pageId === 'settings') renderSettings();
   document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
   const p = $('page-' + pageId); if (p) p.classList.remove('hidden');
@@ -410,6 +411,7 @@ function refreshCurrentPage() {
   if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (prevPage === 'reports') renderReports('all');
   if (prevPage === 'inventory') renderInventory();
+  if (prevPage === 'guests') renderGuests($('guest-search')?.value || '');
   if (prevPage === 'settings') renderSettings();
 }
 document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', e => { e.preventDefault(); navigate(el.dataset.page); }));
@@ -1121,8 +1123,8 @@ $('ipm-btn-convert')?.addEventListener('click', async () => {
 
 // ── Data Load & Init ──────────────────────────────────────────────
 async function loadData() {
-  const [s, r, b, pr] = await Promise.all([api.get('/settings'), api.get('/rooms'), api.get('/bookings'), api.get('/promos')]);
-  Object.assign(app.settings, s); app.rooms = r; app.bookings = b; app.promos = pr;
+  const [s, r, b, pr, gu] = await Promise.all([api.get('/settings'), api.get('/rooms'), api.get('/bookings'), api.get('/promos'), api.get('/guests')]);
+  Object.assign(app.settings, s); app.rooms = r; app.bookings = b; app.promos = pr; app.guests = gu;
 }
 async function initApp() {
   if (!token) { showLogin(); return; }
@@ -1431,6 +1433,153 @@ $('payment-proof-file')?.addEventListener('change', function() {
       p.innerHTML = `Drag & drop a file or <span>browse</span>`;
   }
 });
+
+// ── Guests Data ───────────────────────────────────────────────────
+function getLastStay(email) {
+  if (!email) return null;
+  const norm = email.toLowerCase();
+  const stays = (app.bookings||[]).filter(b => (b.guestEmail||'').toLowerCase() === norm && b.status !== 'cancelled' && b.checkout);
+  if (!stays.length) return null;
+  return stays.reduce((max, b) => b.checkout > max ? b.checkout : max, '');
+}
+
+window.renderGuests = function(filter) {
+  const tb = $('guests-tbody'); if (!tb) return;
+  const q = (filter || '').toLowerCase().trim();
+  const list = (app.guests||[]).filter(g =>
+    !q || g.name.toLowerCase().includes(q) || (g.email||'').toLowerCase().includes(q) || (g.phone||'').includes(q)
+  );
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light)">${q ? 'No guests match your search.' : 'No guests yet. They will appear here after your first booking.'}</td></tr>`;
+    return;
+  }
+  tb.innerHTML = list.map(g => {
+    const last = getLastStay(g.email);
+    return `<tr>
+      <td><div class="td-guest-name">${g.name}</div></td>
+      <td>${g.email ? `<a href="mailto:${g.email}" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
+      <td>${g.phone || '<span style="color:var(--text-light)">—</span>'}</td>
+      <td>${g.createdAt ? shortDate(g.createdAt.split(/[T ]/)[0]) : '—'}</td>
+      <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
+      <td style="text-align:center;">
+        <button class="btn btn-sm btn-outline" style="margin-right:6px" onclick="openGuestModal('${g.id}')"><i data-lucide="pencil"></i></button>
+        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="deleteGuest('${g.id}','${g.name.replace(/'/g,'\\&#39;')}')"><i data-lucide="trash-2"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  lucide.createIcons();
+};
+
+let _editGuestId = null;
+window.openGuestModal = function(id) {
+  _editGuestId = id;
+  const g = id ? (app.guests||[]).find(x => x.id === id) : null;
+  $('guest-modal-title').textContent = g ? 'Edit Guest' : 'Add Guest';
+  $('gf-name').value  = g?.name  || '';
+  $('gf-email').value = g?.email || '';
+  $('gf-phone').value = g?.phone || '';
+  $('guest-modal').classList.add('active');
+  setTimeout(() => $('gf-name').focus(), 80);
+};
+
+window.deleteGuest = async function(id, name) {
+  if (!confirm(`Delete guest "${name}"? This does not affect existing bookings.`)) return;
+  try {
+    await api.del(`/guests/${id}`);
+    showToast('Guest deleted.');
+    await loadData();
+    renderGuests($('guest-search')?.value || '');
+  } catch(e) { showToast('Delete failed: ' + e.message); }
+};
+
+$('guest-form')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = { name: $('gf-name').value.trim(), email: $('gf-email').value.trim(), phone: $('gf-phone').value.trim() };
+  if (!data.name) { showToast('Name is required.'); return; }
+  try {
+    if (_editGuestId) { await api.put(`/guests/${_editGuestId}`, data); showToast('Guest updated!'); }
+    else { await api.post('/guests', data); showToast('Guest added!'); }
+    $('guest-modal').classList.remove('active');
+    await loadData();
+    renderGuests($('guest-search')?.value || '');
+    lucide.createIcons();
+  } catch(e) { showToast('Save failed: ' + e.message); }
+});
+
+// ── Guest Name Autocomplete ───────────────────────────────────────
+(function() {
+  const inp = $('form-name');
+  const list = $('guest-ac-list');
+  if (!inp || !list) return;
+
+  function showAC(val) {
+    const q = val.toLowerCase().trim();
+    list.innerHTML = '';
+    if (!q || !(app.guests||[]).length) { list.style.display='none'; return; }
+    const hits = app.guests.filter(g => g.name.toLowerCase().includes(q) || (g.email||'').toLowerCase().includes(q)).slice(0,8);
+    if (!hits.length) { list.style.display='none'; return; }
+    hits.forEach(g => {
+      const div = document.createElement('div');
+      div.className = 'guest-ac-item';
+      div.innerHTML = `<span class="guest-ac-name">${g.name}</span><span class="guest-ac-meta">${[g.email,g.phone].filter(Boolean).join(' · ')}</span>`;
+      div.addEventListener('mousedown', e => {
+        e.preventDefault(); // prevent blur before click
+        inp.value          = g.name;
+        $('form-email').value = g.email || '';
+        $('form-phone').value = g.phone || '';
+        list.style.display = 'none';
+        checkFormValidity();
+      });
+      list.appendChild(div);
+    });
+    list.style.display = 'block';
+  }
+
+  inp.addEventListener('input',  () => { showAC(inp.value); checkFormValidity(); });
+  inp.addEventListener('focus',  () => showAC(inp.value));
+  inp.addEventListener('blur',   () => setTimeout(() => { list.style.display='none'; }, 150));
+  document.addEventListener('click', e => { if (!e.target.closest('.guest-ac-wrap')) list.style.display='none'; });
+})();
+
+// ── Form Validity (mandatory fields) ─────────────────────────────
+const _requiredFormIds = ['form-name','form-email','form-phone','form-guests','form-address'];
+
+function checkFormValidity() {
+  const ok = _requiredFormIds.every(id => { const el = $(id); return el && el.value.trim() !== ''; });
+  ['btn-create-booking-form','btn-create-quotation-form'].forEach(id => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '0.45';
+    btn.style.cursor  = ok ? '' : 'not-allowed';
+  });
+}
+
+_requiredFormIds.forEach(id => {
+  $(id)?.addEventListener('input', checkFormValidity);
+  $(id)?.addEventListener('change', checkFormValidity);
+});
+
+// Run on form open — patch into the existing openForm function
+const _origOpenForm = window.openForm;
+window.openForm = function(type, dateStr, prefillId) {
+  _origOpenForm(type, dateStr, prefillId);
+  // Small delay to let the form populate before checking validity
+  setTimeout(checkFormValidity, 50);
+};
+
+// ── Guests Autocomplete CSS (injected once) ───────────────────────
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+    .guest-ac-list{display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--surface,#fff);border:1.5px solid var(--border,#e5e7eb);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;margin-top:4px;}
+    .guest-ac-item{padding:10px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:background .12s;}
+    .guest-ac-item:hover{background:var(--hover,#f8fafc);}
+    .guest-ac-name{font-size:14px;font-weight:600;color:var(--text,#1e293b);}
+    .guest-ac-meta{font-size:11px;color:var(--text-light,#64748b);}
+  `;
+  document.head.appendChild(s);
+})();
 
 // ── Booking Hover Tooltip ─────────────────────────────────────────
 (function() {

@@ -44,6 +44,10 @@ async function initDB() {
       value REAL DEFAULT 0, room_id TEXT DEFAULT 'all',
       start_date TEXT, end_date TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS guests (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
   await seedData();
 }
@@ -54,8 +58,10 @@ async function seedData() {
   // Migration: add source (reservation platform) to bookings
   await db.execute('ALTER TABLE bookings ADD COLUMN source TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN additional_fee REAL DEFAULT 0').catch(() => {});
-    await db.execute('ALTER TABLE bookings ADD COLUMN payment_method TEXT').catch(() => {});
+  await db.execute('ALTER TABLE bookings ADD COLUMN payment_method TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
+  // Migration: create guests table for existing deployments
+  await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
   // Migration: update existing BK- booking IDs to TJ-
   await db.execute("UPDATE bookings SET id = REPLACE(id, 'BK-', 'TJ-') WHERE id LIKE 'BK-%'").catch(() => {});
   // Migration: rename 'admin' to 'terratjo' if it exists
@@ -161,6 +167,21 @@ const auth = (req, res, next) => {
   try { req.user = jwt.verify(t, JWT_SECRET); next(); }
   catch { res.status(403).json({ error: 'Invalid/expired token' }); }
 };
+
+// ── Guest Upsert (called whenever a booking is saved) ───────────────
+async function upsertGuest(name, email, phone) {
+  if (!name || !email || !email.trim()) return;
+  const emailNorm = email.trim().toLowerCase();
+  try {
+    const { rows } = await db.execute({ sql:'SELECT id FROM guests WHERE email=?', args:[emailNorm] });
+    if (rows.length > 0) {
+      await db.execute({ sql:'UPDATE guests SET name=?,phone=? WHERE id=?', args:[name, phone||'', rows[0].id] });
+    } else {
+      const gId = `GU-${String(Date.now()).slice(-6)}`;
+      await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name,emailNorm,phone||''] });
+    }
+  } catch(e) { console.warn('Guest upsert:', e.message); }
+}
 
 // ── Google Sheets Sync ────────────────────────────────────────────
 const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxDYikl_WDSKKqgTkdQ9-I4smcR2hyqcCEYwaSbHTDC184wLNiqyGlnv-7RHchxOIa23A/exec';
@@ -346,6 +367,7 @@ app.post('/api/bookings', auth, async (req, res) => {
       try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
       syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0});
     }
+    upsertGuest(guestName, guestEmail, phone);
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -360,6 +382,7 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',paymentMethod||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   // Respond immediately — don't wait for Sheets sync (Vercel 10s limit)
+  upsertGuest(guestName, guestEmail, phone);
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
   // Fire-and-forget sync to Google Sheets after response
   if (status === 'confirmed') {
@@ -378,6 +401,32 @@ app.delete('/api/bookings/:id', auth, async (req, res) => {
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
 });
+// ── Guests ───────────────────────────────────────────────────────
+app.get('/api/guests', auth, async (req, res) => {
+  const { rows } = await db.execute('SELECT * FROM guests ORDER BY name COLLATE NOCASE ASC');
+  res.json(rows.map(g => ({ id:g.id, name:g.name, email:g.email||'', phone:g.phone||'', createdAt:g.created_at })));
+});
+app.post('/api/guests', auth, async (req, res) => {
+  const { name, email, phone } = req.body;
+  if (!name) return res.status(400).json({ error:'Name required' });
+  const id = `GU-${String(Date.now()).slice(-6)}`;
+  try {
+    await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[id,name,email||'',phone||''] });
+    res.status(201).json({ success:true, id });
+  } catch(e) { res.status(400).json({ error:e.message }); }
+});
+app.put('/api/guests/:id', auth, async (req, res) => {
+  const { name, email, phone } = req.body;
+  if (!name) return res.status(400).json({ error:'Name required' });
+  const r = await db.execute({ sql:'UPDATE guests SET name=?,email=?,phone=? WHERE id=?', args:[name,email||'',phone||'',req.params.id] });
+  if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  res.json({ success:true });
+});
+app.delete('/api/guests/:id', auth, async (req, res) => {
+  await db.execute({ sql:'DELETE FROM guests WHERE id=?', args:[req.params.id] });
+  res.json({ success:true });
+});
+
 app.delete('/api/bookings/:id/permanent', auth, async (req, res) => {
   const r = await db.execute({ sql:'DELETE FROM bookings WHERE id=?', args:[req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
