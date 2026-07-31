@@ -830,7 +830,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="client.js?v=3"></script>
+<script src="client.js?v=4"></script>
 <!-- Month Picker Sheet (mobile) -->
 <div id="month-picker-sheet" class="month-picker-sheet">
     <div class="dds-bar"></div>
@@ -885,10 +885,10 @@
             <p style="font-size:16px;font-weight:700;color:var(--text-dark);margin-bottom:8px;">Are you sure you want to cancel?</p>
             <p style="font-size:13px;color:var(--text-light);margin-bottom:28px;">This guest has already paid for this invoice. Please choose how to handle the payment.</p>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                <button class="btn btn-outline" id="cancel-do-refund" style="min-width:130px;">
+                <button class="btn btn-outline" onclick="cancelDoRefundClick()" style="min-width:130px;">
                     <i data-lucide="rotate-ccw"></i> Refund
                 </button>
-                <button class="btn" id="cancel-no-refund" style="min-width:130px;background:#ef4444;color:#fff;border:none;">
+                <button class="btn" onclick="cancelNoRefundClick()" style="min-width:130px;background:#ef4444;color:#fff;border:none;">
                     <i data-lucide="ban"></i> No Refund
                 </button>
             </div>
@@ -909,8 +909,8 @@
                 </select>
             </div>
             <div class="form-actions" style="margin-top:12px;">
-                <button class="btn" id="cancel-refund-back" style="background:var(--primary);color:var(--bg-darker);border:none;">Cancel</button>
-                <button class="btn" id="cancel-refund-confirm" style="background:#ef4444;color:#fff;border:none;">Refund</button>
+                <button class="btn" onclick="cancelRefundBack()" style="background:var(--primary);color:var(--bg-darker);border:none;">Cancel</button>
+                <button class="btn" onclick="cancelRefundConfirmClick()" style="background:#ef4444;color:#fff;border:none;">Refund</button>
             </div>
         </div>
     </div>

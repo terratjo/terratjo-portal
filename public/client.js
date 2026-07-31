@@ -1142,29 +1142,29 @@ async function _doCancel(noRefund, refundAmount, refundMethod) {
   } catch(e) { showToast('Cancel failed: ' + e.message); }
 }
 // Step 1: Refund → show step 2 form
-$('cancel-do-refund')?.addEventListener('click', () => {
+window.cancelDoRefundClick = function() {
   const b = app.bookings.find(x => x.id === currentIPMId);
   $('refund-amount-input').value = b ? calcTotal(b) : '';
   $('refund-method-select').value = '';
   $('cancel-step-1').style.display = 'none';
   $('cancel-step-2').style.display = '';
   $('cancel-modal-title').textContent = 'Refund Details';
-});
+};
 // Step 1: No Refund → cancel immediately
-$('cancel-no-refund')?.addEventListener('click', () => _doCancel(true, 0, ''));
+window.cancelNoRefundClick = function() { _doCancel(true, 0, ''); };
 // Step 2: Cancel button → go back to step 1
-$('cancel-refund-back')?.addEventListener('click', () => {
+window.cancelRefundBack = function() {
   $('cancel-step-2').style.display = 'none';
   $('cancel-step-1').style.display = '';
   $('cancel-modal-title').textContent = 'Cancel Invoice';
-});
-// Step 2: Refund button → submit
-$('cancel-refund-confirm')?.addEventListener('click', () => {
-  const amt = Number($('refund-amount-input').value) || 0;
+};
+// Step 2: Refund button → validate & submit
+window.cancelRefundConfirmClick = function() {
+  const amt    = Number($('refund-amount-input').value) || 0;
   const method = $('refund-method-select').value;
   if (!method) { showToast('Please select a refund method.'); return; }
   _doCancel(false, amt, method);
-});
+};
 $('cancel-confirm-modal')?.addEventListener('click', e => { if (e.target.id === 'cancel-confirm-modal') closeCancelModal(); });
 $('ipm-btn-delete')?.addEventListener('click', async () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
