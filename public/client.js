@@ -1309,7 +1309,7 @@ function printInvoice() {
   const taxAmt = Math.round((roomAmt + (b.cleaningFee || 0)) * ((b.tax || 0) / 100));
   const promo = b.promoId ? (app.promos||[]).find(p => p.id === b.promoId) : null;
   const discountAmt = calcPromoDiscount(promo, roomAmt);
-  const grand = roomAmt + (b.cleaningFee || 0) + (b.deposit || 0) + taxAmt - discountAmt;
+  const grand = roomAmt + (b.cleaningFee || 0) + (b.additionalFee || 0) + (b.deposit || 0) + taxAmt - discountAmt;
   const fmtMoney = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
   const fmtDate = d => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
   const todayStr = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'})).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
