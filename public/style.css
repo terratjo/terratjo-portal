@@ -270,7 +270,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .ipm-table{width:100%;border-collapse:collapse;font-size:13px;}
 .ipm-table thead tr{background:#f9fafb;}
 .ipm-table th{padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--text-light);border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.4px;}
+.ipm-table th:last-child{text-align:right;}
 .ipm-table td{padding:10px;border-bottom:1px solid #f5f5f5;}
+.ipm-table td:last-child{text-align:right;}
+.ipm-table td[colspan="4"]{text-align:left!important;}
 .ipm-total-row td{border-top:1.5px solid var(--border);border-bottom:none;padding-top:12px;}
 .ipm-grand{font-size:15px;font-weight:800;color:var(--text-dark);}
 .ipm-rate-field{border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:13px;width:90px;padding:2px 0;}
