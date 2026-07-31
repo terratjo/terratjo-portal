@@ -62,13 +62,12 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
   // Migration: create guests table for existing deployments
   await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
-  // Backfill: populate guests from all existing bookings (runs quickly; upsert skips duplicates)
+  // Backfill: populate guests from all existing bookings (runs on boot; upsert is idempotent)
   try {
     const { rows: bkRows } = await db.execute(
       `SELECT guest_name, guest_email, phone FROM bookings
-       WHERE guest_email IS NOT NULL AND guest_email != ''
-       GROUP BY LOWER(guest_email)
-       ORDER BY MIN(created_at) ASC`
+       WHERE guest_name IS NOT NULL AND guest_name != ''
+       ORDER BY created_at ASC`
     );
     for (const bk of bkRows) {
       await upsertGuest(bk.guest_name, bk.guest_email, bk.phone);
@@ -183,15 +182,28 @@ const auth = (req, res, next) => {
 
 // ── Guest Upsert (called whenever a booking is saved) ───────────────
 async function upsertGuest(name, email, phone) {
-  if (!name || !email || !email.trim()) return;
-  const emailNorm = email.trim().toLowerCase();
+  if (!name || !name.trim()) return;
   try {
-    const { rows } = await db.execute({ sql:'SELECT id FROM guests WHERE email=?', args:[emailNorm] });
-    if (rows.length > 0) {
-      await db.execute({ sql:'UPDATE guests SET name=?,phone=? WHERE id=?', args:[name, phone||'', rows[0].id] });
+    if (email && email.trim()) {
+      // With email — deduplicate by email
+      const emailNorm = email.trim().toLowerCase();
+      const { rows } = await db.execute({ sql:'SELECT id FROM guests WHERE email=?', args:[emailNorm] });
+      if (rows.length > 0) {
+        await db.execute({ sql:'UPDATE guests SET name=?,phone=? WHERE id=?', args:[name.trim(), phone||'', rows[0].id] });
+      } else {
+        const gId = `GU-${String(Date.now()).slice(-6)}`;
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name.trim(),emailNorm,phone||''] });
+      }
     } else {
-      const gId = `GU-${String(Date.now()).slice(-6)}`;
-      await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name,emailNorm,phone||''] });
+      // No email — deduplicate by name (case-insensitive) among no-email records
+      const { rows } = await db.execute({ sql:`SELECT id FROM guests WHERE LOWER(name)=LOWER(?) AND (email IS NULL OR email='')`, args:[name.trim()] });
+      if (rows.length === 0) {
+        const gId = `GU-${String(Date.now()).slice(-6)}`;
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name.trim(),'',phone||''] });
+      } else {
+        // Update phone if we have a better value
+        if (phone) await db.execute({ sql:'UPDATE guests SET phone=? WHERE id=? AND (phone IS NULL OR phone=\'\')', args:[phone, rows[0].id] });
+      }
     }
   } catch(e) { console.warn('Guest upsert:', e.message); }
 }
