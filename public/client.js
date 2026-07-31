@@ -1710,11 +1710,21 @@ window.openForm = function(type, dateStr, prefillId) {
     const notes = b.notes && b.notes.trim()
       ? `<div class="btt-notes">"${b.notes.trim().slice(0,90)}${b.notes.length>90?'…':''}"</div>`
       : '';
+    const refundBadge = (b.status === 'cancelled' && b.type === 'invoice')
+      ? b.noRefund
+        ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;margin-left:4px;"><span class="btt-dot" style="background:#ef4444;"></span>No Refund</span>`
+        : b.refundAmount > 0
+          ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;margin-left:4px;"><span class="btt-dot" style="background:#ef4444;"></span>Refund ${idr(b.refundAmount)}</span>`
+          : ''
+      : '';
     return `
       <div class="btt-header">
-        <span class="btt-status" style="background:${sc.bg};color:${sc.color};">
-          <span class="btt-dot" style="background:${sc.dot};"></span>${sc.label}
-        </span>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <span class="btt-status" style="background:${sc.bg};color:${sc.color};">
+            <span class="btt-dot" style="background:${sc.dot};"></span>${sc.label}
+          </span>
+          ${refundBadge}
+        </div>
         <span class="btt-id">${b.id}</span>
       </div>
       <div class="btt-name">${b.guestName}</div>
