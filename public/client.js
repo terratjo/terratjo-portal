@@ -1435,10 +1435,28 @@ $('payment-proof-file')?.addEventListener('change', function() {
 });
 
 // ── Guests Data ───────────────────────────────────────────────────
-function getLastStay(email) {
-  if (!email) return null;
-  const norm = email.toLowerCase();
-  const stays = (app.bookings||[]).filter(b => (b.guestEmail||'').toLowerCase() === norm && b.status !== 'cancelled' && b.checkout);
+// Match a guest to bookings by name + email (mirrors the backend dedup key)
+function _guestBookings(g) {
+  const nameNorm  = (g.name  || '').toLowerCase().trim();
+  const emailNorm = (g.email || '').toLowerCase().trim();
+  return (app.bookings || []).filter(b => {
+    const bName  = (b.guestName  || '').toLowerCase().trim();
+    const bEmail = (b.guestEmail || '').toLowerCase().trim();
+    return bName === nameNorm && bEmail === emailNorm;
+  });
+}
+
+// Earliest booking created_at → shown as "First Created" (more accurate than DB insert time)
+function getFirstBookingDate(g) {
+  const matches = _guestBookings(g).filter(b => b.createdAt);
+  if (!matches.length) return g.createdAt ? g.createdAt.split(/[T ]/)[0] : null;
+  const earliest = matches.reduce((min, b) => b.createdAt < min ? b.createdAt : min, matches[0].createdAt);
+  return earliest.split(/[T ]/)[0];
+}
+
+// Latest checkout date among non-cancelled bookings
+function getLastStay(g) {
+  const stays = _guestBookings(g).filter(b => b.status !== 'cancelled' && b.checkout);
   if (!stays.length) return null;
   return stays.reduce((max, b) => b.checkout > max ? b.checkout : max, '');
 }
@@ -1454,12 +1472,13 @@ window.renderGuests = function(filter) {
     return;
   }
   tb.innerHTML = list.map(g => {
-    const last = getLastStay(g.email);
+    const firstDate = getFirstBookingDate(g);
+    const last      = getLastStay(g);
     return `<tr>
       <td><div class="td-guest-name">${g.name}</div></td>
       <td>${g.email ? `<a href="mailto:${g.email}" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
       <td>${g.phone || '<span style="color:var(--text-light)">—</span>'}</td>
-      <td>${g.createdAt ? shortDate(g.createdAt.split(/[T ]/)[0]) : '—'}</td>
+      <td>${firstDate ? shortDate(firstDate) : '—'}</td>
       <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
       <td style="text-align:center;">
         <button class="btn btn-sm btn-outline" style="margin-right:6px" onclick="openGuestModal('${g.id}')"><i data-lucide="pencil"></i></button>

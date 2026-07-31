@@ -62,15 +62,17 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
   // Migration: create guests table for existing deployments
   await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
-  // Backfill: populate guests from all existing bookings (runs on boot; upsert is idempotent)
+  // Backfill: populate guests from all existing bookings (idempotent; runs on every boot)
   try {
     const { rows: bkRows } = await db.execute(
-      `SELECT guest_name, guest_email, phone FROM bookings
+      `SELECT guest_name, guest_email, phone, MIN(created_at) AS first_date
+       FROM bookings
        WHERE guest_name IS NOT NULL AND guest_name != ''
-       ORDER BY created_at ASC`
+       GROUP BY LOWER(guest_name), LOWER(COALESCE(guest_email,''))
+       ORDER BY first_date ASC`
     );
     for (const bk of bkRows) {
-      await upsertGuest(bk.guest_name, bk.guest_email, bk.phone);
+      await upsertGuest(bk.guest_name, bk.guest_email, bk.phone, bk.first_date);
     }
   } catch(e) { console.warn('Guest backfill:', e.message); }
 
@@ -181,28 +183,34 @@ const auth = (req, res, next) => {
 };
 
 // ── Guest Upsert (called whenever a booking is saved) ───────────────
-async function upsertGuest(name, email, phone) {
+// Deduplication key: (name + email) — same email with different names = different guests
+async function upsertGuest(name, email, phone, overrideCreatedAt) {
   if (!name || !name.trim()) return;
+  const nameTrim  = name.trim();
+  const emailNorm = (email && email.trim()) ? email.trim().toLowerCase() : '';
   try {
-    if (email && email.trim()) {
-      // With email — deduplicate by email
-      const emailNorm = email.trim().toLowerCase();
-      const { rows } = await db.execute({ sql:'SELECT id FROM guests WHERE email=?', args:[emailNorm] });
-      if (rows.length > 0) {
-        await db.execute({ sql:'UPDATE guests SET name=?,phone=? WHERE id=?', args:[name.trim(), phone||'', rows[0].id] });
-      } else {
-        const gId = `GU-${String(Date.now()).slice(-6)}`;
-        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name.trim(),emailNorm,phone||''] });
+    const { rows } = await db.execute({
+      sql: `SELECT id, created_at FROM guests WHERE LOWER(name)=LOWER(?) AND LOWER(COALESCE(email,''))=?`,
+      args: [nameTrim, emailNorm]
+    });
+    if (rows.length > 0) {
+      const existingId = rows[0].id;
+      const existingDate = rows[0].created_at || '';
+      // Fix created_at if the override is earlier (e.g. backfill correcting today's timestamp)
+      const shouldFixDate = overrideCreatedAt && (!existingDate || overrideCreatedAt < existingDate);
+      if (shouldFixDate) {
+        await db.execute({ sql:'UPDATE guests SET created_at=? WHERE id=?', args:[overrideCreatedAt, existingId] });
+      }
+      // Fill in phone if the record has none
+      if (phone) {
+        await db.execute({ sql:`UPDATE guests SET phone=? WHERE id=? AND (phone IS NULL OR phone='')`, args:[phone, existingId] });
       }
     } else {
-      // No email — deduplicate by name (case-insensitive) among no-email records
-      const { rows } = await db.execute({ sql:`SELECT id FROM guests WHERE LOWER(name)=LOWER(?) AND (email IS NULL OR email='')`, args:[name.trim()] });
-      if (rows.length === 0) {
-        const gId = `GU-${String(Date.now()).slice(-6)}`;
-        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,name.trim(),'',phone||''] });
+      const gId = `GU-${String(Date.now()).slice(-6)}`;
+      if (overrideCreatedAt) {
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone,created_at) VALUES (?,?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||'',overrideCreatedAt] });
       } else {
-        // Update phone if we have a better value
-        if (phone) await db.execute({ sql:'UPDATE guests SET phone=? WHERE id=? AND (phone IS NULL OR phone=\'\')', args:[phone, rows[0].id] });
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||''] });
       }
     }
   } catch(e) { console.warn('Guest upsert:', e.message); }
