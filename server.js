@@ -62,6 +62,19 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
   // Migration: create guests table for existing deployments
   await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+  // Backfill: populate guests from all existing bookings (runs quickly; upsert skips duplicates)
+  try {
+    const { rows: bkRows } = await db.execute(
+      `SELECT guest_name, guest_email, phone FROM bookings
+       WHERE guest_email IS NOT NULL AND guest_email != ''
+       GROUP BY LOWER(guest_email)
+       ORDER BY MIN(created_at) ASC`
+    );
+    for (const bk of bkRows) {
+      await upsertGuest(bk.guest_name, bk.guest_email, bk.phone);
+    }
+  } catch(e) { console.warn('Guest backfill:', e.message); }
+
   // Migration: update existing BK- booking IDs to TJ-
   await db.execute("UPDATE bookings SET id = REPLACE(id, 'BK-', 'TJ-') WHERE id LIKE 'BK-%'").catch(() => {});
   // Migration: rename 'admin' to 'terratjo' if it exists
