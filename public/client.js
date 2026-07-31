@@ -1073,6 +1073,26 @@ window.openIPM = function(id) {
   const igIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="vertical-align:middle;margin-right:5px"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`;
   $('ipm-c-phone').innerHTML = waIcon + (app.settings.phone||''); $('ipm-c-social').innerHTML = igIcon + (app.settings.social||'').replace(/^@/,''); $('ipm-footer-msg').textContent = app.settings.notes||'';
   const isCancelled = b.status==='cancelled';
+  // Refund/No Refund row in IPM
+  const refundRow   = $('ipm-row-refund');
+  const noRefundRow = $('ipm-row-norefund');
+  if (isCancelled && refundRow && noRefundRow) {
+    if (b.noRefund) {
+      refundRow.style.display = 'none';
+      noRefundRow.style.display = '';
+    } else if (b.refundAmount > 0) {
+      $('ipm-t-refund').textContent = '-' + idr(b.refundAmount);
+      $('ipm-refund-method-text').textContent = 'via ' + b.refundMethod;
+      refundRow.style.display = '';
+      noRefundRow.style.display = 'none';
+    } else {
+      refundRow.style.display = 'none';
+      noRefundRow.style.display = 'none';
+    }
+  } else {
+    if (refundRow)   refundRow.style.display = 'none';
+    if (noRefundRow) noRefundRow.style.display = 'none';
+  }
   $('ipm-btn-cancel').style.display = (b.type === 'invoice' && !isCancelled) ? '' : 'none';
   $('ipm-btn-edit').style.display = isCancelled ? 'none' : '';
   $('ipm-btn-convert').style.display = b.status === 'quotation' ? '' : 'none';
@@ -1103,20 +1123,49 @@ $('ipm-btn-cancel')?.addEventListener('click', async () => {
   }
 });
 
-async function _doCancel(noRefund) {
+function closeCancelModal() {
   $('cancel-confirm-modal').classList.remove('active');
+  // Reset to step 1
+  $('cancel-step-1').style.display = '';
+  $('cancel-step-2').style.display = 'none';
+  $('cancel-modal-title').textContent = 'Cancel Invoice';
+}
+async function _doCancel(noRefund, refundAmount, refundMethod) {
+  closeCancelModal();
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
   try {
-    await api.post(`/bookings/${b.id}/cancel`, { noRefund });
+    await api.post(`/bookings/${b.id}/cancel`, { noRefund, refundAmount: refundAmount || 0, refundMethod: refundMethod || '' });
     showToast(noRefund
-      ? 'Invoice cancelled — payment retained (no refund).'
-      : 'Invoice cancelled — refund issued.');
+      ? 'Invoice cancelled — No Refund. Payment retained.'
+      : `Invoice cancelled — Refund of ${idr(refundAmount)} via ${refundMethod}.`);
     await loadData(); closeIPM(); refreshCurrentPage();
   } catch(e) { showToast('Cancel failed: ' + e.message); }
 }
-$('cancel-do-refund')?.addEventListener('click',  () => _doCancel(false));
-$('cancel-no-refund')?.addEventListener('click', () => _doCancel(true));
-$('cancel-confirm-modal')?.addEventListener('click', e => { if (e.target.id === 'cancel-confirm-modal') $('cancel-confirm-modal').classList.remove('active'); });
+// Step 1: Refund → show step 2 form
+$('cancel-do-refund')?.addEventListener('click', () => {
+  const b = app.bookings.find(x => x.id === currentIPMId);
+  $('refund-amount-input').value = b ? calcTotal(b) : '';
+  $('refund-method-select').value = '';
+  $('cancel-step-1').style.display = 'none';
+  $('cancel-step-2').style.display = '';
+  $('cancel-modal-title').textContent = 'Refund Details';
+});
+// Step 1: No Refund → cancel immediately
+$('cancel-no-refund')?.addEventListener('click', () => _doCancel(true, 0, ''));
+// Step 2: Cancel button → go back to step 1
+$('cancel-refund-back')?.addEventListener('click', () => {
+  $('cancel-step-2').style.display = 'none';
+  $('cancel-step-1').style.display = '';
+  $('cancel-modal-title').textContent = 'Cancel Invoice';
+});
+// Step 2: Refund button → submit
+$('cancel-refund-confirm')?.addEventListener('click', () => {
+  const amt = Number($('refund-amount-input').value) || 0;
+  const method = $('refund-method-select').value;
+  if (!method) { showToast('Please select a refund method.'); return; }
+  _doCancel(false, amt, method);
+});
+$('cancel-confirm-modal')?.addEventListener('click', e => { if (e.target.id === 'cancel-confirm-modal') closeCancelModal(); });
 $('ipm-btn-delete')?.addEventListener('click', async () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
   if (!confirm(`⚠️ Permanently delete booking ${b.id}? This cannot be undone.`)) return;
@@ -1300,6 +1349,13 @@ function printInvoice() {
     + ((b.tax||0)>0 ? '<tr><td>Tax ('+b.tax+'%)</td><td>-</td><td>-</td><td>'+fmtMoney(taxAmt)+'</td></tr>' : '')
     + (discountAmt > 0 ? `<tr style="color:#16a34a"><td>Promo: ${promo.name}</td><td>-</td><td>-</td><td>-${fmtMoney(discountAmt)}</td></tr>` : '')
     + '<tr class="tt"><td colspan="3"><b>Total Amount</b></td><td><b>'+fmtMoney(grand)+'</b></td></tr>'
+    + (b.status === 'cancelled' ? (
+        b.noRefund
+          ? '<tr><td colspan="4" style="color:#ef4444;font-weight:700;padding-top:6px;font-size:12px;">\u26a0 No Refund \u2014 payment retained by property</td></tr>'
+          : b.refundAmount > 0
+            ? '<tr style="color:#ef4444"><td colspan="3"><strong style="color:#ef4444">Refund</strong> <span style="font-size:11px">via '+b.refundMethod+'</span></td><td style="color:#ef4444;font-weight:700;">-'+fmtMoney(b.refundAmount)+'</td></tr>'
+            : ''
+      ) : '')
     + '</tbody></table>'
     + (b.notes ? '<div class="nb"><b>Notes / Special Requests:</b> '+b.notes+'</div>' : '')
     + '<div class="pay"><div><div class="pl">Payment Info:</div>' + paymentHtml + '</div>'

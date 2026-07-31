@@ -772,6 +772,13 @@
                                 <td colspan="3"><strong>Total Amount</strong></td>
                                 <td><strong class="ipm-grand" id="ipm-t-grand">Rp 0</strong></td>
                             </tr>
+                            <tr id="ipm-row-refund" style="display:none;">
+                                <td colspan="3" style="color:#ef4444;font-weight:600;"><strong style="color:#ef4444">Refund</strong> <span id="ipm-refund-method-text" style="font-weight:400;font-size:11px;margin-left:4px;"></span></td>
+                                <td id="ipm-t-refund" style="color:#ef4444;font-weight:600;">—</td>
+                            </tr>
+                            <tr id="ipm-row-norefund" style="display:none;">
+                                <td colspan="4" style="color:#ef4444;font-weight:700;font-size:12px;padding-top:6px;">⚠ No Refund — payment retained by property</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -867,10 +874,11 @@
 <div class="modal-overlay" id="cancel-confirm-modal">
     <div class="modal form-modal" style="max-width:440px;">
         <div class="modal-header">
-            <h3>Cancel Invoice</h3>
-            <button class="btn-icon" onclick="$('cancel-confirm-modal').classList.remove('active')"><i data-lucide="x"></i></button>
+            <h3 id="cancel-modal-title">Cancel Invoice</h3>
+            <button class="btn-icon" onclick="closeCancelModal()"><i data-lucide="x"></i></button>
         </div>
-        <div class="modal-body" style="text-align:center;padding:28px 24px;">
+        <!-- Step 1: Are you sure? -->
+        <div id="cancel-step-1" class="modal-body" style="text-align:center;padding:28px 24px;">
             <div style="width:52px;height:52px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
                 <i data-lucide="alert-triangle" style="color:#ef4444;width:26px;height:26px;"></i>
             </div>
@@ -883,6 +891,26 @@
                 <button class="btn" id="cancel-no-refund" style="min-width:130px;background:#ef4444;color:#fff;border:none;">
                     <i data-lucide="ban"></i> No Refund
                 </button>
+            </div>
+        </div>
+        <!-- Step 2: Refund details -->
+        <div id="cancel-step-2" class="modal-body" style="display:none;padding:24px;">
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Enter the refund amount and choose the refund method.</p>
+            <div class="form-group">
+                <label>REFUND AMOUNT (Rp) <span style="color:#ef4444">*</span></label>
+                <input type="number" id="refund-amount-input" placeholder="0" min="0" style="font-size:16px;font-weight:700;">
+            </div>
+            <div class="form-group">
+                <label>REFUND METHOD <span style="color:#ef4444">*</span></label>
+                <select id="refund-method-select">
+                    <option value="">— Select Method —</option>
+                    <option value="Transfer Bank">Transfer Bank</option>
+                    <option value="Cash">Cash</option>
+                </select>
+            </div>
+            <div class="form-actions" style="margin-top:12px;">
+                <button class="btn" id="cancel-refund-back" style="background:var(--primary);color:var(--bg-darker);border:none;">Cancel</button>
+                <button class="btn" id="cancel-refund-confirm" style="background:#ef4444;color:#fff;border:none;">Refund</button>
             </div>
         </div>
     </div>

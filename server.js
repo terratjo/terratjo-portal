@@ -61,6 +61,8 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_method TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN no_refund INTEGER DEFAULT 0').catch(() => {});
+  await db.execute('ALTER TABLE bookings ADD COLUMN refund_amount REAL DEFAULT 0').catch(() => {});
+  await db.execute("ALTER TABLE bookings ADD COLUMN refund_method TEXT DEFAULT ''").catch(() => {});
   // Migration: create guests table for existing deployments
   await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
   // Backfill: populate guests from all existing bookings (idempotent; runs on every boot)
@@ -380,7 +382,9 @@ const mapBooking = row => ({
   deposit:Number(row.deposit), tax:Number(row.tax), status:row.status, notes:row.notes,
   paymentMethod:row.payment_method||'', paymentProofUrl:row.payment_proof_url||'',
   promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||'',
-  noRefund: row.no_refund === 1 || row.no_refund === '1'
+  noRefund: row.no_refund === 1 || row.no_refund === '1',
+  refundAmount: Number(row.refund_amount || 0),
+  refundMethod: row.refund_method || ''
 });
 app.get('/api/bookings', auth, async (req, res) => {
   await completeOldBookings(); // Run on every fetch — works reliably on Vercel serverless
@@ -464,10 +468,10 @@ app.delete('/api/guests/:id', auth, async (req, res) => {
 
 // Cancel booking with refund/no-refund decision (for Invoice type)
 app.post('/api/bookings/:id/cancel', auth, async (req, res) => {
-  const { noRefund } = req.body;
+  const { noRefund, refundAmount, refundMethod } = req.body;
   const r = await db.execute({
-    sql: 'UPDATE bookings SET status=?, no_refund=? WHERE id=?',
-    args: ['cancelled', noRefund ? 1 : 0, req.params.id]
+    sql: 'UPDATE bookings SET status=?, no_refund=?, refund_amount=?, refund_method=? WHERE id=?',
+    args: ['cancelled', noRefund ? 1 : 0, refundAmount || 0, refundMethod || '', req.params.id]
   });
   if (!r.rowsAffected) return res.status(404).json({ error: 'Not found' });
   broadcast({ type: 'sync', target: 'all' });
