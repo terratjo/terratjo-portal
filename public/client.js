@@ -746,7 +746,8 @@ function renderReports(filter) {
   const awaiting = app.bookings.filter(b => b.status === 'awaiting' || (b.status === 'quotation' && effStatus(b) !== 'expired'));
   const quotations = app.bookings.filter(b => b.type === 'quotation');
   const cancelled = app.bookings.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
-  const bRev = app.bookings.filter(b => b.type === 'invoice' && b.status !== 'cancelled').reduce((s, b) => s + calcTotal(b), 0);
+  // Revenue = confirmed invoices + cancelled invoices where guest paid and no refund was given
+  const bRev = app.bookings.filter(b => b.type === 'invoice' && (b.status !== 'cancelled' || b.noRefund)).reduce((s, b) => s + calcTotal(b), 0);
   const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
   $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">${t('rep.rev')}</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">${t('rep.from_bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.confirmed')}</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">${t('rep.bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.awaiting')}</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">${t('rep.need_follow')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.quotations')}</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} ${t('rep.cancelled_exp')}</div></div>`;
   const tb = $('reports-tbody'); if (!tb) return;
@@ -1090,10 +1091,32 @@ $('ipm-btn-x')?.addEventListener('click', closeIPM); $('ipm-btn-close')?.addEven
 $('ipm-overlay')?.addEventListener('click', e => { if (e.target.id==='ipm-overlay') closeIPM(); });
 $('ipm-btn-cancel')?.addEventListener('click', async () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
-  if (!confirm('Mark this booking as cancelled?')) return;
-  try { await api.del(`/bookings/${b.id}`); showToast('Booking marked as cancelled.'); await loadData(); closeIPM(); refreshCurrentPage(); }
-  catch (e) { showToast('Cancel failed: ' + e.message); }
+  if (b.type === 'invoice') {
+    // Invoice = guest has paid → show Refund / No Refund dialog
+    $('cancel-confirm-modal').classList.add('active');
+    lucide.createIcons();
+  } else {
+    // Quotation — simple cancel, no payment involved
+    if (!confirm('Mark this quotation as cancelled?')) return;
+    try { await api.del(`/bookings/${b.id}`); showToast('Booking marked as cancelled.'); await loadData(); closeIPM(); refreshCurrentPage(); }
+    catch (e) { showToast('Cancel failed: ' + e.message); }
+  }
 });
+
+async function _doCancel(noRefund) {
+  $('cancel-confirm-modal').classList.remove('active');
+  const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
+  try {
+    await api.post(`/bookings/${b.id}/cancel`, { noRefund });
+    showToast(noRefund
+      ? 'Invoice cancelled — payment retained (no refund).'
+      : 'Invoice cancelled — refund issued.');
+    await loadData(); closeIPM(); refreshCurrentPage();
+  } catch(e) { showToast('Cancel failed: ' + e.message); }
+}
+$('cancel-do-refund')?.addEventListener('click',  () => _doCancel(false));
+$('cancel-no-refund')?.addEventListener('click', () => _doCancel(true));
+$('cancel-confirm-modal')?.addEventListener('click', e => { if (e.target.id === 'cancel-confirm-modal') $('cancel-confirm-modal').classList.remove('active'); });
 $('ipm-btn-delete')?.addEventListener('click', async () => {
   const b = app.bookings.find(x => x.id === currentIPMId); if (!b) return;
   if (!confirm(`⚠️ Permanently delete booking ${b.id}? This cannot be undone.`)) return;
@@ -1454,9 +1477,13 @@ function getFirstBookingDate(g) {
   return earliest.split(/[T ]/)[0];
 }
 
-// Latest checkout date among non-cancelled bookings
+// Latest checkout date — only Invoice type, non-cancelled (Quotation/Expired = guest never stayed)
 function getLastStay(g) {
-  const stays = _guestBookings(g).filter(b => b.status !== 'cancelled' && b.checkout);
+  const stays = _guestBookings(g).filter(b =>
+    b.type === 'invoice' &&
+    b.status !== 'cancelled' &&
+    b.checkout
+  );
   if (!stays.length) return null;
   return stays.reduce((max, b) => b.checkout > max ? b.checkout : max, '');
 }

@@ -60,6 +60,7 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN additional_fee REAL DEFAULT 0').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_method TEXT').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN payment_proof_url TEXT').catch(() => {});
+  await db.execute('ALTER TABLE bookings ADD COLUMN no_refund INTEGER DEFAULT 0').catch(() => {});
   // Migration: create guests table for existing deployments
   await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
   // Backfill: populate guests from all existing bookings (idempotent; runs on every boot)
@@ -378,7 +379,8 @@ const mapBooking = row => ({
   additionalFee:Number(row.additional_fee),
   deposit:Number(row.deposit), tax:Number(row.tax), status:row.status, notes:row.notes,
   paymentMethod:row.payment_method||'', paymentProofUrl:row.payment_proof_url||'',
-  promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||''
+  promoId:row.promo_id||null, createdAt:row.created_at, source:row.source||'',
+  noRefund: row.no_refund === 1 || row.no_refund === '1'
 });
 app.get('/api/bookings', auth, async (req, res) => {
   await completeOldBookings(); // Run on every fetch — works reliably on Vercel serverless
@@ -458,6 +460,18 @@ app.put('/api/guests/:id', auth, async (req, res) => {
 app.delete('/api/guests/:id', auth, async (req, res) => {
   await db.execute({ sql:'DELETE FROM guests WHERE id=?', args:[req.params.id] });
   res.json({ success:true });
+});
+
+// Cancel booking with refund/no-refund decision (for Invoice type)
+app.post('/api/bookings/:id/cancel', auth, async (req, res) => {
+  const { noRefund } = req.body;
+  const r = await db.execute({
+    sql: 'UPDATE bookings SET status=?, no_refund=? WHERE id=?',
+    args: ['cancelled', noRefund ? 1 : 0, req.params.id]
+  });
+  if (!r.rowsAffected) return res.status(404).json({ error: 'Not found' });
+  broadcast({ type: 'sync', target: 'all' });
+  res.json({ success: true });
 });
 
 app.delete('/api/bookings/:id/permanent', auth, async (req, res) => {

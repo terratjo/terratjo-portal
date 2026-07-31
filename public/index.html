@@ -863,6 +863,31 @@
     </button>
 </nav>
 
+<!-- ── Cancel Confirmation Modal (Invoice only) ──────────────── -->
+<div class="modal-overlay" id="cancel-confirm-modal">
+    <div class="modal form-modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h3>Cancel Invoice</h3>
+            <button class="btn-icon" onclick="$('cancel-confirm-modal').classList.remove('active')"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:28px 24px;">
+            <div style="width:52px;height:52px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <i data-lucide="alert-triangle" style="color:#ef4444;width:26px;height:26px;"></i>
+            </div>
+            <p style="font-size:16px;font-weight:700;color:var(--text-dark);margin-bottom:8px;">Are you sure you want to cancel?</p>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:28px;">This guest has already paid for this invoice. Please choose how to handle the payment.</p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-outline" id="cancel-do-refund" style="min-width:130px;">
+                    <i data-lucide="rotate-ccw"></i> Refund
+                </button>
+                <button class="btn" id="cancel-no-refund" style="min-width:130px;background:#ef4444;color:#fff;border:none;">
+                    <i data-lucide="ban"></i> No Refund
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ── Guest Edit Modal ────────────────────────────────────────── -->
 <div class="modal-overlay" id="guest-modal">
     <div class="modal form-modal" style="max-width:480px;">
