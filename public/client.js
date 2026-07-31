@@ -1712,14 +1712,14 @@ window.openForm = function(type, dateStr, prefillId) {
       : '';
     const refundBadge = (b.status === 'cancelled' && b.type === 'invoice')
       ? b.noRefund
-        ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;margin-left:4px;"><span class="btt-dot" style="background:#ef4444;"></span>No Refund</span>`
+        ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;border:1.5px solid #ef4444;"><span class="btt-dot" style="background:#ef4444;"></span>No Refund</span>`
         : b.refundAmount > 0
-          ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;margin-left:4px;"><span class="btt-dot" style="background:#ef4444;"></span>Refund ${idr(b.refundAmount)}</span>`
+          ? `<span class="btt-status" style="background:#fef2f2;color:#ef4444;border:1.5px solid #ef4444;"><span class="btt-dot" style="background:#ef4444;"></span>Refund</span>`
           : ''
       : '';
     return `
       <div class="btt-header">
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:4px;">
           <span class="btt-status" style="background:${sc.bg};color:${sc.color};">
             <span class="btt-dot" style="background:${sc.dot};"></span>${sc.label}
           </span>
