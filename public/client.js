@@ -759,7 +759,10 @@ function renderReports(filter) {
     const n = nightsCount(b.checkin, b.checkout);
     tb.innerHTML += `<tr data-bid="${b.id}" onclick="handleRowClick('${b.id}')"><td><span class="td-ref">${b.id}</span></td><td><div class="td-guest-name">${b.guestName}</div><div class="td-guest-email">${b.guestEmail||''}</div></td><td>${typeBadge(b.type)}</td><td>${getRoomName(b.room)}</td><td>${shortDate(b.checkin)}</td><td>${shortDate(b.checkout)}</td><td><span class="nights-label">${n} ${n===1?t('lbl.night'):t('lbl.nights')}</span></td><td>${idr(b.rate)}</td><td class="td-bold">${idr(calcTotal(b))}</td><td>${quotaStatusCell(b)}</td></tr>`;
   });
-  $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} revenue: <strong>${idr(bRev)}</strong></span><span class="grand">Grand Total: ${idr(qVal + bRev)}</span>`;
+  const qVal = rows.filter(b => b.type === 'quotation').reduce((s, b) => s + calcTotal(b), 0);
+  const bVal = rows.filter(b => b.type === 'invoice').reduce((s, b) => s + calcTotal(b), 0);
+  const grandTotal = rows.reduce((s, b) => s + calcTotal(b), 0);
+  $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} value: <strong>${idr(bVal)}</strong></span><span class="grand">Grand Total: ${idr(grandTotal)}</span>`;
 }
 $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#reports-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderReports(e.target.dataset.filter); });
 
