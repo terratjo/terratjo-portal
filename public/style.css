@@ -313,8 +313,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .form-row{display:flex;gap:12px;}
 .form-row .form-group{flex:1;}
 .form-group{margin-bottom:13px;}
-.form-group label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.5px;color:var(--text-mid);margin-bottom:5px;text-transform:uppercase;}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;transition:border-color .2s;background:#fff;color:var(--text-dark);}
+.form-group input,.form-group select,.form-group textarea{box-sizing:border-box;width:100%;max-width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;transition:border-color .2s;background:#fff;color:var(--text-dark);}
+.form-group input[type="date"]{-webkit-appearance:none;appearance:none;min-height:44px;box-sizing:border-box;width:100%;max-width:100%;background:#fff;}
 .form-group textarea{resize:vertical;}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,200,35,.14);}
 .form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
@@ -645,7 +645,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     }
 
     /* ── FORM rows stack ──────────────────────────────── */
-    .form-row{flex-direction:column;gap:0;}
+    .form-row{flex-direction:column;gap:12px;width:100%;box-sizing:border-box;}
+    .form-row .form-group{width:100%;margin-bottom:0;box-sizing:border-box;}
     .form-modal{max-width:100%;margin:0;border-radius:22px 22px 0 0!important;}
 
     /* ── MODALS – bottom sheet ────────────────────────── */
