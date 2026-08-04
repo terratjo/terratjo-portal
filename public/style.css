@@ -163,15 +163,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 }
 
 .guest-date-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 1.5px solid #3b82f6;
-  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border: 1px solid #3b82f6;
+  color: #2563eb;
   background: #eff6ff;
-  border-radius: 12px;
+  border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .mobile-g-created { display: none; }
 
@@ -618,11 +622,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
         display: flex !important;
         justify-content: space-between;
         align-items: center;
+        width: 100% !important;
         border-bottom: 1px solid #f0f0f0 !important;
         padding-bottom: 8px !important;
         margin-bottom: 4px !important;
+        gap: 10px;
     }
-    #page-guests .mobile-g-created { display: block; }
+    #page-guests .data-table tbody td.td-g-name .td-guest-name {
+        flex: 1;
+        min-width: 0;
+    }
+    #page-guests .mobile-g-created {
+        display: flex !important;
+        align-items: center;
+        flex-shrink: 0;
+    }
     #page-guests .data-table tbody td.td-g-created { display: none !important; }
     #page-guests .data-table tbody td.td-g-laststay { display: none !important; }
     #page-guests .g-dash { display: none; }
