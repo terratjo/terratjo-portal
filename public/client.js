@@ -1027,18 +1027,9 @@ window.openIPM = function(id) {
   const grandTotal = acc + b.cleaningFee + (b.additionalFee||0) + b.deposit + taxAmt - discountAmt;
   $('ipm-brand').textContent = app.settings.brand||'Terratjo Room'; $('ipm-brand-addr').textContent = app.settings.invAddress||'';
   const isExpiredQ = isExpired(b);
-  const docLabel = b.type==='quotation' ? 'QUOTATION' : 'INVOICE';
+  const docLabel = b.status==='cancelled' ? 'CANCELLED' : (isExpiredQ ? 'EXPIRED QUOTATION' : (b.type==='quotation' ? 'QUOTATION' : 'INVOICE'));
   const docEl = $('ipm-doc-type'); docEl.textContent = docLabel;
-  docEl.style.color = b.type==='quotation' ? 'var(--quotation)' : 'var(--primary)';
-
-  const st = effStatus(b);
-  const stBadge = $('ipm-status-badge');
-  if (stBadge) {
-    const m = { confirmed:'badge-confirmed', awaiting:'badge-awaiting', quotation:'badge-quotation', cancelled:'badge-cancelled', expired:'badge-expired', completed:'badge-completed' };
-    const l = { confirmed:t('st.confirmed'), awaiting:t('st.awaiting'), quotation:t('st.quotation'), cancelled:t('st.cancelled'), expired:t('st.expired'), completed:t('st.completed') };
-    stBadge.className = `badge ${m[st]||'badge-quotation'}`;
-    stBadge.textContent = l[st] || st;
-  }
+  docEl.style.color = b.status==='cancelled' ? '#b91c1c' : (isExpiredQ ? '#6b7280' : 'var(--primary)');
   $('ipm-doc-id').textContent = b.id;
   const createdDateRaw = b.createdAt ? b.createdAt.split(/[T ]/)[0] : _todayJkt;
   const docDateStr = shortDate(createdDateRaw);
