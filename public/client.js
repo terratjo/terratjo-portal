@@ -226,8 +226,7 @@ function showLogin() { const o = $('login-overlay'); if (o) o.classList.add('act
 function logout() { token = null; localStorage.removeItem('terratjo_token'); showLogin(); }
 window.logout = logout;
 
-document.addEventListener('DOMContentLoaded', () => {
-
+function mainInit() {
   // ── Login handler ──────────────────────────────────────────────
   async function doLogin() {
     const username = ($('login-user')?.value || '').trim();
@@ -248,9 +247,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Click the Sign In button
+  // Click Sign In button or submit form
+  const loginForm = $('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+  }
   const loginBtn = $('btn-login-submit');
-  if (loginBtn) loginBtn.addEventListener('click', doLogin);
+  if (loginBtn) {
+    loginBtn.addEventListener('click', e => { e.preventDefault(); doLogin(); });
+  }
 
   // Also support pressing Enter inside the form fields
   ['login-user', 'login-pass'].forEach(id => {
@@ -267,33 +272,34 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.addEventListener('click', () => {
       const isHidden = passInput.type === 'password';
       passInput.type = isHidden ? 'text' : 'password';
-      eyeOpen.style.display = isHidden ? 'none' : '';
-      eyeClosed.style.display = isHidden ? '' : 'none';
+      if (eyeOpen) eyeOpen.style.display = isHidden ? 'none' : '';
+      if (eyeClosed) eyeClosed.style.display = isHidden ? '' : 'none';
       toggleBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
     });
   }
 
-  // ── Logo: apply cached instantly → fetch fresh → cache for next load ──
+  // ── Logo: apply cached logo or server logo ──
   const _logoImg = document.getElementById('login-logo-img');
   const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
-  if (_cachedLogo && _logoImg) {
-    _logoImg.src = _cachedLogo; // instant — no flash
+  if (_logoImg) {
+    if (_cachedLogo) _logoImg.src = _cachedLogo;
     _logoImg.style.opacity = '1';
-  } else if (_logoImg) {
-    _logoImg.style.opacity = '0'; // hide wrong static logo until correct one loads
   }
   fetch('/api/logo').then(r => r.json()).then(d => {
-    if (d.logo) {
+    if (d && d.logo) {
       localStorage.setItem('terratjo_logo_cache', d.logo);
       if (_logoImg) { _logoImg.src = d.logo; _logoImg.style.opacity = '1'; }
-    } else if (_logoImg) { 
-      _logoImg.src = '/logo.png'; 
-      _logoImg.style.opacity = '1'; 
     }
-  }).catch(() => { if (_logoImg) { _logoImg.src = '/logo.png'; _logoImg.style.opacity = '1'; } });
+  }).catch(() => {});
 
   if (token) initApp(); else showLogin();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mainInit);
+} else {
+  mainInit();
+}
 
 // ── Real-time Sync (SSE) ─────────────────────────────────────────
 function initSSE() {
