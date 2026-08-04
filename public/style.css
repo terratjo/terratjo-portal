@@ -812,9 +812,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 /* ── Promo System ─────────────────────────────────────────────────── */
 .promo-empty { text-align:center; padding:28px; color:var(--text-light); font-size:13px; }
 .promo-table-wrap { overflow-x:auto; }
-.promo-table { width:100%; border-collapse:collapse; font-size:13px; }
+.promo-table { width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
 .promo-table thead tr { background:var(--primary-dark,#1a1a2e); }
 .promo-table thead th { padding:10px 14px; font-size:11px; font-weight:600; color:#fff; text-align:left; text-transform:uppercase; letter-spacing:.5px; }
+.promo-table thead th:first-child { border-top-left-radius:10px; border-bottom-left-radius:10px; }
+.promo-table thead th:last-child { border-top-right-radius:10px; border-bottom-right-radius:10px; }
 .promo-table tbody td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
 .promo-table tbody tr { cursor: pointer; transition: background .12s; }
 .promo-table tbody tr:hover { background:var(--primary-light); }
