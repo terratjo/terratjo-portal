@@ -162,6 +162,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
   vertical-align: middle;
 }
 
+.guest-date-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1.5px solid #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mobile-g-created { display: none; }
+
+
 /* Nights label allowed to wrap (shows "1 night" / "2 nights" in up to 2 lines) */
 .nights-label { white-space:normal; text-align:center; line-height:1.3; display:inline-block; word-break:keep-all; }
 .td-bold{font-weight:700;}
@@ -559,9 +573,63 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     .form-modal{max-height:92vh;}
     .ipm-modal{max-width:100%;width:100%;border-radius:22px 22px 0 0;max-height:95vh;}
 
-    /* ── LOGIN – stays centered, compact card ─────────── */
+    /* ── LOGIN & GUEST MODAL – stays centered, compact card ─────────── */
     #login-overlay{align-items:center!important;padding:20px!important;}
     #login-overlay .modal{border-radius:22px!important;max-width:340px!important;width:calc(100% - 32px)!important;}
+
+    #guest-modal {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 16px !important;
+    }
+    #guest-modal .modal {
+        border-radius: 22px !important;
+        max-width: 420px !important;
+        width: calc(100% - 24px) !important;
+        margin: auto !important;
+        max-height: 88vh !important;
+        overflow-y: auto !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,.22) !important;
+    }
+
+    /* ── MOBILE CARD FORMATTING FOR GUESTS DATA ────────────── */
+    #page-guests .data-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+        position: relative;
+        padding: 14px 16px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        border: 1px solid var(--border);
+    }
+    #page-guests .data-table tbody td {
+        display: block !important;
+        width: 100% !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-align: left !important;
+        white-space: normal;
+    }
+    #page-guests .data-table tbody td.td-g-name {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f0f0f0 !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 4px !important;
+    }
+    #page-guests .mobile-g-created { display: block; }
+    #page-guests .data-table tbody td.td-g-created { display: none !important; }
+    #page-guests .data-table tbody td.td-g-laststay { display: none !important; }
+    #page-guests .g-dash { display: none; }
+    #page-guests .td-g-email { font-size: 13px; color: var(--primary); }
+    #page-guests .td-g-phone { font-size: 13px; color: var(--text-mid); }
+    #page-guests .td-g-address { font-size: 12.5px; color: var(--text-mid); }
+    #page-guests .td-address { max-width: 100%; }
 
     /* ── Invoice paper on mobile ──────────────────────── */
     .ipm-paper{padding:14px 12px;}

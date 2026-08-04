@@ -1568,13 +1568,17 @@ window.renderGuests = function(filter) {
     const firstDate = getFirstBookingDate(g);
     const last      = getLastStay(g);
     const displayAddr = formatShortAddress(g.address);
+    const dateBadgeHtml = firstDate ? `<span class="guest-date-badge">${shortDate(firstDate)}</span>` : '';
     return `<tr onclick="openGuestModal('${g.id}')" title="Click to view/edit ${g.name.replace(/"/g,'&quot;')}">
-      <td><div class="td-guest-name">${g.name}</div></td>
-      <td>${g.email ? `<a href="mailto:${g.email}" onclick="event.stopPropagation()" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
-      <td>${g.phone || '<span style="color:var(--text-light)">—</span>'}</td>
-      <td><span class="td-address" title="${(g.address||'').replace(/"/g,'&quot;')}">${displayAddr || '<span style="color:var(--text-light)">—</span>'}</span></td>
-      <td>${firstDate ? shortDate(firstDate) : '—'}</td>
-      <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
+      <td class="td-g-name">
+        <div class="td-guest-name">${g.name}</div>
+        <div class="mobile-g-created">${dateBadgeHtml}</div>
+      </td>
+      <td class="td-g-email">${g.email ? `<a href="mailto:${g.email}" onclick="event.stopPropagation()" style="color:var(--primary)">${g.email}</a>` : '<span class="g-dash">—</span>'}</td>
+      <td class="td-g-phone">${g.phone ? `<span>${g.phone}</span>` : '<span class="g-dash">—</span>'}</td>
+      <td class="td-g-address">${g.address ? `<span class="td-address" title="${(g.address||'').replace(/"/g,'&quot;')}">${displayAddr}</span>` : '<span class="g-dash">—</span>'}</td>
+      <td class="td-g-created">${dateBadgeHtml || '<span class="g-dash">—</span>'}</td>
+      <td class="td-g-laststay">${last ? `<span class="g-laststay-val">Last stay: ${shortDate(last)}</span>` : '<span class="g-dash">—</span>'}</td>
     </tr>`;
   }).join('');
   lucide.createIcons();
