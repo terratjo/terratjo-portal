@@ -749,7 +749,6 @@ function renderReports(filter) {
   const cancelled = app.bookings.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
   // Revenue = confirmed invoices + cancelled invoices where guest paid and no refund was given
   const bRev = app.bookings.filter(b => b.type === 'invoice' && (b.status !== 'cancelled' || b.noRefund)).reduce((s, b) => s + calcTotal(b), 0);
-  const qVal = quotations.reduce((s, b) => s + calcTotal(b), 0);
   $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">${t('rep.rev')}</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">${t('rep.from_bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.confirmed')}</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">${t('rep.bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.awaiting')}</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">${t('rep.need_follow')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.quotations')}</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} ${t('rep.cancelled_exp')}</div></div>`;
   const tb = $('reports-tbody'); if (!tb) return;
   const rows = app.bookings
