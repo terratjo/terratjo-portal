@@ -248,13 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Login form handlers
-  $('login-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    doLogin();
-  });
+  // Click the Sign In button
   const loginBtn = $('btn-login-submit');
-  if (loginBtn) loginBtn.addEventListener('click', e => { e.preventDefault(); doLogin(); });
+  if (loginBtn) loginBtn.addEventListener('click', doLogin);
 
   // Also support pressing Enter inside the form fields
   ['login-user', 'login-pass'].forEach(id => {
@@ -277,15 +273,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Logo: apply logo.png instantly → fetch custom logo if set ──
+  // ── Logo: apply cached instantly → fetch fresh → cache for next load ──
   const _logoImg = document.getElementById('login-logo-img');
   const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
-  if (_logoImg) {
-    _logoImg.src = _cachedLogo || '/logo.png';
+  if (_cachedLogo && _logoImg) {
+    _logoImg.src = _cachedLogo; // instant — no flash
     _logoImg.style.opacity = '1';
+  } else if (_logoImg) {
+    _logoImg.style.opacity = '0'; // hide wrong static logo until correct one loads
   }
   fetch('/api/logo').then(r => r.json()).then(d => {
-    if (d && d.logo) {
+    if (d.logo) {
       localStorage.setItem('terratjo_logo_cache', d.logo);
       if (_logoImg) { _logoImg.src = d.logo; _logoImg.style.opacity = '1'; }
     } else if (_logoImg) { 
