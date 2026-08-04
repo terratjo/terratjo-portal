@@ -1548,10 +1548,10 @@ window.renderGuests = function(filter) {
   const tb = $('guests-tbody'); if (!tb) return;
   const q = (filter || '').toLowerCase().trim();
   const list = (app.guests||[]).filter(g =>
-    !q || g.name.toLowerCase().includes(q) || (g.email||'').toLowerCase().includes(q) || (g.phone||'').includes(q)
+    !q || g.name.toLowerCase().includes(q) || (g.email||'').toLowerCase().includes(q) || (g.phone||'').includes(q) || (g.address||'').toLowerCase().includes(q)
   );
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light)">${q ? 'No guests match your search.' : 'No guests yet. They will appear here after your first booking.'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-light)">${q ? 'No guests match your search.' : 'No guests yet. They will appear here after your first booking.'}</td></tr>`;
     return;
   }
   tb.innerHTML = list.map(g => {
@@ -1561,6 +1561,7 @@ window.renderGuests = function(filter) {
       <td><div class="td-guest-name">${g.name}</div></td>
       <td>${g.email ? `<a href="mailto:${g.email}" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
       <td>${g.phone || '<span style="color:var(--text-light)">—</span>'}</td>
+      <td>${g.address || '<span style="color:var(--text-light)">—</span>'}</td>
       <td>${firstDate ? shortDate(firstDate) : '—'}</td>
       <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
       <td style="text-align:center;">
@@ -1577,9 +1578,10 @@ window.openGuestModal = function(id) {
   _editGuestId = id;
   const g = id ? (app.guests||[]).find(x => x.id === id) : null;
   $('guest-modal-title').textContent = g ? 'Edit Guest' : 'Add Guest';
-  $('gf-name').value  = g?.name  || '';
-  $('gf-email').value = g?.email || '';
-  $('gf-phone').value = g?.phone || '';
+  $('gf-name').value    = g?.name    || '';
+  $('gf-email').value   = g?.email   || '';
+  $('gf-phone').value   = g?.phone   || '';
+  $('gf-address').value = g?.address || '';
   $('guest-modal').classList.add('active');
   setTimeout(() => $('gf-name').focus(), 80);
 };
@@ -1596,7 +1598,12 @@ window.deleteGuest = async function(id, name) {
 
 $('guest-form')?.addEventListener('submit', async e => {
   e.preventDefault();
-  const data = { name: $('gf-name').value.trim(), email: $('gf-email').value.trim(), phone: $('gf-phone').value.trim() };
+  const data = {
+    name: $('gf-name').value.trim(),
+    email: $('gf-email').value.trim(),
+    phone: $('gf-phone').value.trim(),
+    address: $('gf-address').value.trim()
+  };
   if (!data.name) { showToast('Name is required.'); return; }
   try {
     if (_editGuestId) { await api.put(`/guests/${_editGuestId}`, data); showToast('Guest updated!'); }
@@ -1623,12 +1630,13 @@ $('guest-form')?.addEventListener('submit', async e => {
     hits.forEach(g => {
       const div = document.createElement('div');
       div.className = 'guest-ac-item';
-      div.innerHTML = `<span class="guest-ac-name">${g.name}</span><span class="guest-ac-meta">${[g.email,g.phone].filter(Boolean).join(' · ')}</span>`;
+      div.innerHTML = `<span class="guest-ac-name">${g.name}</span><span class="guest-ac-meta">${[g.email,g.phone,g.address].filter(Boolean).join(' · ')}</span>`;
       div.addEventListener('mousedown', e => {
         e.preventDefault(); // prevent blur before click
         inp.value          = g.name;
         $('form-email').value = g.email || '';
         $('form-phone').value = g.phone || '';
+        if ($('form-address')) $('form-address').value = g.address || '';
         list.style.display = 'none';
         checkFormValidity();
       });

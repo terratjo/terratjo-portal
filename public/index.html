@@ -224,7 +224,7 @@
                     <button class="btn btn-primary" onclick="openGuestModal(null)"><i data-lucide="user-plus"></i> Add Guest</button>
                 </div>
                 <div style="margin-bottom:16px;">
-                    <input type="text" id="guest-search" class="search-input-inline" placeholder="&#128269; Search by name, email or phone..." oninput="renderGuests(this.value)" style="width:100%;max-width:420px;padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);outline:none;">
+                    <input type="text" id="guest-search" class="search-input-inline" placeholder="&#128269; Search by name, email, phone or address..." oninput="renderGuests(this.value)" style="width:100%;max-width:420px;padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);outline:none;">
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
@@ -233,6 +233,7 @@
                                 <th>GUEST NAME</th>
                                 <th>EMAIL</th>
                                 <th>PHONE</th>
+                                <th>ADDRESS</th>
                                 <th>FIRST CREATED</th>
                                 <th>LAST STAY</th>
                                 <th style="text-align:center">ACTIONS</th>
@@ -937,6 +938,10 @@
                 <div class="form-group">
                     <label>PHONE / WHATSAPP</label>
                     <input type="text" id="gf-phone" placeholder="+62 ...">
+                </div>
+                <div class="form-group">
+                    <label>ADDRESS</label>
+                    <input type="text" id="gf-address" placeholder="City or Full Address">
                 </div>
                 <div class="form-actions" style="margin-top:8px;">
                     <button type="button" class="btn btn-outline" onclick="$('guest-modal').classList.remove('active')">Cancel</button>

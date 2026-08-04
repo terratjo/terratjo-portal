@@ -45,7 +45,7 @@ async function initDB() {
       start_date TEXT, end_date TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS guests (
-      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT,
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, address TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -63,19 +63,20 @@ async function seedData() {
   await db.execute('ALTER TABLE bookings ADD COLUMN no_refund INTEGER DEFAULT 0').catch(() => {});
   await db.execute('ALTER TABLE bookings ADD COLUMN refund_amount REAL DEFAULT 0').catch(() => {});
   await db.execute("ALTER TABLE bookings ADD COLUMN refund_method TEXT DEFAULT ''").catch(() => {});
-  // Migration: create guests table for existing deployments
-  await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+  // Migration: create guests table for existing deployments & add address
+  await db.execute(`CREATE TABLE IF NOT EXISTS guests (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, address TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+  await db.execute('ALTER TABLE guests ADD COLUMN address TEXT').catch(() => {});
   // Backfill: populate guests from all existing bookings (idempotent; runs on every boot)
   try {
     const { rows: bkRows } = await db.execute(
-      `SELECT guest_name, guest_email, phone, MIN(created_at) AS first_date
+      `SELECT guest_name, guest_email, phone, MAX(address) AS address, MIN(created_at) AS first_date
        FROM bookings
        WHERE guest_name IS NOT NULL AND guest_name != ''
        GROUP BY LOWER(guest_name), LOWER(COALESCE(guest_email,''))
        ORDER BY first_date ASC`
     );
     for (const bk of bkRows) {
-      await upsertGuest(bk.guest_name, bk.guest_email, bk.phone, bk.first_date);
+      await upsertGuest(bk.guest_name, bk.guest_email, bk.phone, bk.address, bk.first_date);
     }
   } catch(e) { console.warn('Guest backfill:', e.message); }
 
@@ -187,10 +188,11 @@ const auth = (req, res, next) => {
 
 // ── Guest Upsert (called whenever a booking is saved) ───────────────
 // Deduplication key: (name + email) — same email with different names = different guests
-async function upsertGuest(name, email, phone, overrideCreatedAt) {
+async function upsertGuest(name, email, phone, address, overrideCreatedAt) {
   if (!name || !name.trim()) return;
   const nameTrim  = name.trim();
   const emailNorm = (email && email.trim()) ? email.trim().toLowerCase() : '';
+  const addrTrim  = (address && address.trim()) ? address.trim() : '';
   try {
     const { rows } = await db.execute({
       sql: `SELECT id, created_at FROM guests WHERE LOWER(name)=LOWER(?) AND LOWER(COALESCE(email,''))=?`,
@@ -208,12 +210,16 @@ async function upsertGuest(name, email, phone, overrideCreatedAt) {
       if (phone) {
         await db.execute({ sql:`UPDATE guests SET phone=? WHERE id=? AND (phone IS NULL OR phone='')`, args:[phone, existingId] });
       }
+      // Update address if provided
+      if (addrTrim) {
+        await db.execute({ sql:`UPDATE guests SET address=? WHERE id=?`, args:[addrTrim, existingId] });
+      }
     } else {
       const gId = `GU-${String(Date.now()).slice(-6)}`;
       if (overrideCreatedAt) {
-        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone,created_at) VALUES (?,?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||'',overrideCreatedAt] });
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone,address,created_at) VALUES (?,?,?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||'',addrTrim,overrideCreatedAt] });
       } else {
-        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||''] });
+        await db.execute({ sql:'INSERT INTO guests (id,name,email,phone,address) VALUES (?,?,?,?,?)', args:[gId,nameTrim,emailNorm,phone||'',addrTrim] });
       }
     }
   } catch(e) { console.warn('Guest upsert:', e.message); }
@@ -406,7 +412,7 @@ app.post('/api/bookings', auth, async (req, res) => {
       try { const {rows:rm} = await db.execute({sql:'SELECT name FROM rooms WHERE id=?',args:[room]}); if(rm[0]) roomNameStr=rm[0].name; } catch(e) {}
       syncToSheets('confirmed', {id:idGen,guestName,guestEmail,phone,address,room:roomNameStr,checkin,checkout,numGuests,total,status,notes,promo:discAmt||'',reservationDetails:source||'',additionalFee:additionalFee||0});
     }
-    upsertGuest(guestName, guestEmail, phone);
+    upsertGuest(guestName, guestEmail, phone, address);
     broadcast({ type:'sync', target:'all' }); res.status(201).json({ success: true, id: idGen });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -421,7 +427,7 @@ app.put('/api/bookings/:id', auth, async (req, res) => {
     args:[type,guestName,guestEmail,phone,address,numGuests,room,checkin,checkout,checkinTime,checkoutTime,rate,cleaningFee,additionalFee||0,deposit,tax,status,notes,promoId||null,source||'',paymentMethod||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   // Respond immediately — don't wait for Sheets sync (Vercel 10s limit)
-  upsertGuest(guestName, guestEmail, phone);
+  upsertGuest(guestName, guestEmail, phone, address);
   broadcast({ type:'sync', target:'all' }); res.json({ success: true });
   // Fire-and-forget sync to Google Sheets after response
   if (status === 'confirmed') {
@@ -443,21 +449,21 @@ app.delete('/api/bookings/:id', auth, async (req, res) => {
 // ── Guests ───────────────────────────────────────────────────────
 app.get('/api/guests', auth, async (req, res) => {
   const { rows } = await db.execute('SELECT * FROM guests ORDER BY name COLLATE NOCASE ASC');
-  res.json(rows.map(g => ({ id:g.id, name:g.name, email:g.email||'', phone:g.phone||'', createdAt:g.created_at })));
+  res.json(rows.map(g => ({ id:g.id, name:g.name, email:g.email||'', phone:g.phone||'', address:g.address||'', createdAt:g.created_at })));
 });
 app.post('/api/guests', auth, async (req, res) => {
-  const { name, email, phone } = req.body;
+  const { name, email, phone, address } = req.body;
   if (!name) return res.status(400).json({ error:'Name required' });
   const id = `GU-${String(Date.now()).slice(-6)}`;
   try {
-    await db.execute({ sql:'INSERT INTO guests (id,name,email,phone) VALUES (?,?,?,?)', args:[id,name,email||'',phone||''] });
+    await db.execute({ sql:'INSERT INTO guests (id,name,email,phone,address) VALUES (?,?,?,?,?)', args:[id,name,email||'',phone||'',address||''] });
     res.status(201).json({ success:true, id });
   } catch(e) { res.status(400).json({ error:e.message }); }
 });
 app.put('/api/guests/:id', auth, async (req, res) => {
-  const { name, email, phone } = req.body;
+  const { name, email, phone, address } = req.body;
   if (!name) return res.status(400).json({ error:'Name required' });
-  const r = await db.execute({ sql:'UPDATE guests SET name=?,email=?,phone=? WHERE id=?', args:[name,email||'',phone||'',req.params.id] });
+  const r = await db.execute({ sql:'UPDATE guests SET name=?,email=?,phone=?,address=? WHERE id=?', args:[name,email||'',phone||'',address||'',req.params.id] });
   if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
   res.json({ success:true });
 });
