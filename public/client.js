@@ -1096,7 +1096,8 @@ window.openIPM = function(id) {
     if (noRefundRow) noRefundRow.style.display = 'none';
   }
   $('ipm-btn-cancel').style.display = (b.type === 'invoice' && !isCancelled) ? '' : 'none';
-  $('ipm-btn-edit').style.display = isCancelled ? 'none' : '';
+  const isExp = isExpired(b) || effStatus(b) === 'expired';
+  $('ipm-btn-edit').style.display = (isCancelled || isExp) ? 'none' : '';
   $('ipm-btn-convert').style.display = b.status === 'quotation' ? '' : 'none';
   $('ipm-overlay').classList.add('active');
 };
