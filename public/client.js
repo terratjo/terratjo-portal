@@ -1544,6 +1544,16 @@ function getLastStay(g) {
   return stays.reduce((max, b) => b.checkout > max ? b.checkout : max, '');
 }
 
+function formatShortAddress(addr) {
+  if (!addr || !addr.trim()) return '';
+  const str = addr.trim();
+  const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    return parts.slice(-2).join(', ').replace(/^Kabupaten\s+/i, '');
+  }
+  return str;
+}
+
 window.renderGuests = function(filter) {
   const tb = $('guests-tbody'); if (!tb) return;
   const q = (filter || '').toLowerCase().trim();
@@ -1557,16 +1567,17 @@ window.renderGuests = function(filter) {
   tb.innerHTML = list.map(g => {
     const firstDate = getFirstBookingDate(g);
     const last      = getLastStay(g);
-    return `<tr>
+    const displayAddr = formatShortAddress(g.address);
+    return `<tr onclick="openGuestModal('${g.id}')" title="Click to view/edit ${g.name.replace(/"/g,'&quot;')}">
       <td><div class="td-guest-name">${g.name}</div></td>
-      <td>${g.email ? `<a href="mailto:${g.email}" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
+      <td>${g.email ? `<a href="mailto:${g.email}" onclick="event.stopPropagation()" style="color:var(--primary)">${g.email}</a>` : '<span style="color:var(--text-light)">—</span>'}</td>
       <td>${g.phone || '<span style="color:var(--text-light)">—</span>'}</td>
-      <td>${g.address || '<span style="color:var(--text-light)">—</span>'}</td>
+      <td><span class="td-address" title="${(g.address||'').replace(/"/g,'&quot;')}">${displayAddr || '<span style="color:var(--text-light)">—</span>'}</span></td>
       <td>${firstDate ? shortDate(firstDate) : '—'}</td>
       <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
-      <td style="text-align:center;">
-        <button class="btn btn-sm btn-outline" style="margin-right:6px" onclick="openGuestModal('${g.id}')"><i data-lucide="pencil"></i></button>
-        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="deleteGuest('${g.id}','${g.name.replace(/'/g,'\\&#39;')}')"><i data-lucide="trash-2"></i></button>
+      <td style="text-align:center;" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-outline" style="margin-right:6px" onclick="event.stopPropagation(); openGuestModal('${g.id}')"><i data-lucide="pencil"></i></button>
+        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="event.stopPropagation(); deleteGuest('${g.id}','${g.name.replace(/'/g,'\\&#39;')}')"><i data-lucide="trash-2"></i></button>
       </td>
     </tr>`;
   }).join('');
