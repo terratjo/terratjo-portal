@@ -816,6 +816,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .promo-table thead tr { background:var(--primary-dark,#1a1a2e); }
 .promo-table thead th { padding:10px 14px; font-size:11px; font-weight:600; color:#fff; text-align:left; text-transform:uppercase; letter-spacing:.5px; }
 .promo-table tbody td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.promo-table tbody tr { cursor: pointer; transition: background .12s; }
 .promo-table tbody tr:hover { background:var(--primary-light); }
 
 /* Promo status badges */

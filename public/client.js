@@ -1381,22 +1381,18 @@ function renderPromos() {
     return `<span class="promo-badge ${cfg.cls}">${cfg.lbl}</span>`;
   };
   list.innerHTML = `<div class="promo-table-wrap"><table class="promo-table">
-    <thead><tr><th>${t('th.desc')}</th><th>${t('th.room')}</th><th>${t('th.discount')}</th><th style="text-align:center">${t('th.period')}</th><th>${t('th.status')}</th><th></th></tr></thead>
+    <thead><tr><th>${t('th.desc')}</th><th>${t('th.room')}</th><th>${t('th.discount')}</th><th style="text-align:center">${t('th.period')}</th><th style="text-align:center">${t('th.status')}</th></tr></thead>
     <tbody>${app.promos.map(p => {
       const st = promoStatus(p);
       const disc = p.type === 'percentage' ? `-${p.value}%` : `-${idr(p.value)}`;
       const room = p.roomId === 'all' ? t('promo.all_rooms') : getRoomName(p.roomId);
       const period = p.startDate && p.endDate ? `${shortDate(p.startDate)} → ${shortDate(p.endDate)}` : '—';
-      return `<tr>
+      return `<tr onclick="openEditPromo('${p.id}')" style="cursor:pointer;" title="Click to view/edit promo">
         <td><strong>${p.name}</strong></td>
         <td>${room}</td>
         <td style="color:#16a34a;font-weight:700;">${disc}</td>
         <td style="font-size:12px;text-align:center;">${period}</td>
-        <td>${badge(st)}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-outline btn-sm" onclick="openEditPromo('${p.id}')">${t('inv.edit')}</button>
-          <button class="btn btn-danger btn-sm" onclick="deletePromo('${p.id}')">${t('inv.delete')}</button>
-        </td>
+        <td style="text-align:center;">${badge(st)}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
@@ -1412,8 +1408,27 @@ window.openEditPromo = function(id) {
   document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === p.type));
   $('promo-value-label').textContent = p.type === 'percentage' ? t('promo.val_perc') : t('promo.val_fixed');
   updatePromoStatusPreview();
+  if ($('promo-btn-delete')) $('promo-btn-delete').style.display = 'inline-flex';
   $('promo-modal').classList.add('active');
+  lucide.createIcons();
 };
+
+window.deletePromoFromModal = async function() {
+  const id = $('promo-edit-id')?.value;
+  if (!id) return;
+  const p = app.promos.find(x => x.id === id);
+  const name = p ? p.name : 'this promo';
+  if (!confirm(`Delete promo "${name}"?`)) return;
+  try {
+    await api.del(`/promos/${id}`);
+    showToast('Promo deleted.');
+    $('promo-modal').classList.remove('active');
+    await loadData();
+    renderPromos();
+    populatePromoSelect($('form-room')?.value||'');
+  } catch(e) { showToast('Delete failed: ' + e.message); }
+};
+
 window.deletePromo = async function(id) {
   if (!confirm('Delete this promo?')) return;
   try { await api.del(`/promos/${id}`); showToast('Promo deleted.'); await loadData(); renderPromos(); populatePromoSelect($('form-room')?.value||''); }
@@ -1439,7 +1454,9 @@ $('btn-add-promo')?.addEventListener('click', () => {
   $('promo-type').value = 'percentage'; $('promo-value-label').textContent = t('promo.val_perc');
   document.querySelectorAll('.promo-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'percentage'));
   populatePromoRoomSelect(); $('promo-status-preview').style.display = 'none';
+  if ($('promo-btn-delete')) $('promo-btn-delete').style.display = 'none';
   $('promo-modal').classList.add('active');
+  lucide.createIcons();
 });
 document.querySelectorAll('.promo-type-btn').forEach(btn => {
   btn.addEventListener('click', () => {

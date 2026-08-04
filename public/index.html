@@ -638,9 +638,14 @@
                     </div>
                 </div>
                 <div id="promo-status-preview" style="display:none;text-align:center;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;font-weight:600;"></div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-outline" id="btn-cancel-promo">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Promo</button>
+                <div class="form-actions" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <button type="button" class="btn btn-danger" id="promo-btn-delete" title="Delete Promo" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:9px 14px;" onclick="deletePromoFromModal()"><i data-lucide="trash-2"></i></button>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button type="button" class="btn btn-outline" id="btn-cancel-promo">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Promo</button>
+                    </div>
                 </div>
             </form>
         </div>
