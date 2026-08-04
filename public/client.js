@@ -1561,7 +1561,7 @@ window.renderGuests = function(filter) {
     !q || g.name.toLowerCase().includes(q) || (g.email||'').toLowerCase().includes(q) || (g.phone||'').includes(q) || (g.address||'').toLowerCase().includes(q)
   );
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-light)">${q ? 'No guests match your search.' : 'No guests yet. They will appear here after your first booking.'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-light)">${q ? 'No guests match your search.' : 'No guests yet. They will appear here after your first booking.'}</td></tr>`;
     return;
   }
   tb.innerHTML = list.map(g => {
@@ -1575,10 +1575,6 @@ window.renderGuests = function(filter) {
       <td><span class="td-address" title="${(g.address||'').replace(/"/g,'&quot;')}">${displayAddr || '<span style="color:var(--text-light)">—</span>'}</span></td>
       <td>${firstDate ? shortDate(firstDate) : '—'}</td>
       <td>${last ? shortDate(last) : '<span style="color:var(--text-light)">—</span>'}</td>
-      <td style="text-align:center;" onclick="event.stopPropagation()">
-        <button class="btn btn-sm btn-outline" style="margin-right:6px" onclick="event.stopPropagation(); openGuestModal('${g.id}')"><i data-lucide="pencil"></i></button>
-        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="event.stopPropagation(); deleteGuest('${g.id}','${g.name.replace(/'/g,'\\&#39;')}')"><i data-lucide="trash-2"></i></button>
-      </td>
     </tr>`;
   }).join('');
   lucide.createIcons();
@@ -1593,8 +1589,24 @@ window.openGuestModal = function(id) {
   $('gf-email').value   = g?.email   || '';
   $('gf-phone').value   = g?.phone   || '';
   $('gf-address').value = g?.address || '';
+  if ($('gf-btn-delete')) $('gf-btn-delete').style.display = g ? 'inline-flex' : 'none';
   $('guest-modal').classList.add('active');
+  lucide.createIcons();
   setTimeout(() => $('gf-name').focus(), 80);
+};
+
+window.deleteGuestFromModal = async function() {
+  if (!_editGuestId) return;
+  const g = (app.guests||[]).find(x => x.id === _editGuestId);
+  const name = g ? g.name : 'this guest';
+  if (!confirm(`Delete guest "${name}"? This does not affect existing bookings.`)) return;
+  try {
+    await api.del(`/guests/${_editGuestId}`);
+    showToast('Guest deleted.');
+    $('guest-modal').classList.remove('active');
+    await loadData();
+    renderGuests($('guest-search')?.value || '');
+  } catch(e) { showToast('Delete failed: ' + e.message); }
 };
 
 window.deleteGuest = async function(id, name) {
