@@ -1742,12 +1742,12 @@ window.openForm = function(type, dateStr, prefillId) {
 // ── Booking Hover Tooltip ─────────────────────────────────────────
 (function() {
   const STATUS_CFG = {
-    confirmed:  { bg:'#dcfce7', color:'#166534', dot:'#16a34a',  label:'Confirmed' },
-    awaiting:   { bg:'rgba(217,119,6,.12)', color:'#92400e', dot:'#d97706', label:'Awaiting Payment' },
-    quotation:  { bg:'rgba(37,99,235,.1)',  color:'#1e40af', dot:'#2563eb', label:'Quotation' },
-    completed:  { bg:'rgba(15,118,110,.12)',color:'#0f766e', dot:'#0f766e', label:'Completed' },
-    cancelled:  { bg:'rgba(220,38,38,.08)', color:'#b91c1c', dot:'#dc2626', label:'Cancelled' },
-    expired:    { bg:'rgba(220,38,38,.12)', color:'#b91c1c', dot:'#dc2626', label:'Expired' },
+    confirmed:  { bg:'rgba(22,163,74,.1)',  color:'#16a34a', border:'1px solid rgba(22,163,74,.3)',  dot:'#16a34a', label:'Confirmed' },
+    awaiting:   { bg:'rgba(217,119,6,.1)',  color:'#d97706', border:'1px solid rgba(217,119,6,.3)',  dot:'#d97706', label:'Awaiting Payment' },
+    quotation:  { bg:'rgba(37,99,235,.1)',  color:'#2563eb', border:'1px solid rgba(37,99,235,.3)',  dot:'#2563eb', label:'Quotation' },
+    completed:  { bg:'rgba(15,118,110,.1)', color:'#0f766e', border:'1px solid rgba(15,118,110,.3)', dot:'#0f766e', label:'Completed' },
+    cancelled:  { bg:'rgba(220,38,38,.1)',  color:'#dc2626', border:'1px solid rgba(220,38,38,.3)',  dot:'#dc2626', label:'Cancelled' },
+    expired:    { bg:'rgba(220,38,38,.1)',  color:'#dc2626', border:'1px solid rgba(220,38,38,.3)',  dot:'#dc2626', label:'Expired' },
   };
 
   const getTip = () => document.getElementById('booking-tooltip');
@@ -1776,7 +1776,7 @@ window.openForm = function(type, dateStr, prefillId) {
     return `
       <div class="btt-header">
         <div style="display:flex;align-items:center;gap:4px;">
-          <span class="btt-status" style="background:${sc.bg};color:${sc.color};">
+          <span class="btt-status" style="background:${sc.bg};color:${sc.color};border:${sc.border};">
             <span class="btt-dot" style="background:${sc.dot};"></span>${sc.label}
           </span>
           ${refundBadge}
