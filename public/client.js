@@ -1928,3 +1928,20 @@ window.openForm = function(type, dateStr, prefillId) {
     _bid = null;
   });
 })();
+
+// ── Desktop Escape Key Modal Dismissal ────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    if (window.innerWidth <= 768) return; // Desktop view only
+    const activeModals = document.querySelectorAll('.modal-overlay.active, .modal.active');
+    if (activeModals.length) {
+      e.preventDefault();
+      activeModals.forEach(m => m.classList.remove('active'));
+    }
+    if (typeof closeDayDetail === 'function') closeDayDetail();
+    if (typeof closeMonthPicker === 'function') closeMonthPicker();
+    const acList = $('guest-ac-list');
+    if (acList) acList.style.display = 'none';
+  }
+});
+
