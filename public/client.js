@@ -278,11 +278,11 @@ function mainInit() {
     });
   }
 
-  // ── Logo: apply cached logo or server logo ──
+  // ── Logo: apply cached custom logo or fetch from database settings ──
   const _logoImg = document.getElementById('login-logo-img');
   const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
-  if (_logoImg) {
-    if (_cachedLogo) _logoImg.src = _cachedLogo;
+  if (_logoImg && _cachedLogo) {
+    _logoImg.src = _cachedLogo;
     _logoImg.style.opacity = '1';
   }
   fetch('/api/logo').then(r => r.json()).then(d => {
