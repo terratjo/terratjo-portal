@@ -153,8 +153,10 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body;
-  const { rows } = await db.execute({ sql:'SELECT * FROM users WHERE username = ?', args:[username] });
+  const username = (req.body?.username || '').trim();
+  const password = (req.body?.password || '').trim();
+  if (!username || !password) return res.status(400).json({ error: 'Username & password required' });
+  const { rows } = await db.execute({ sql:'SELECT * FROM users WHERE LOWER(username) = LOWER(?)', args:[username] });
   const user = rows[0];
   if (!user || !bcrypt.compareSync(password, user.password_hash))
     return res.status(401).json({ error: 'Invalid credentials' });

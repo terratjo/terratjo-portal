@@ -279,16 +279,11 @@ function mainInit() {
   }
 
   // ── Logo: apply cached custom logo or fetch from database settings ──
-  const _logoImg = document.getElementById('login-logo-img');
   const _cachedLogo = localStorage.getItem('terratjo_logo_cache');
-  if (_logoImg && _cachedLogo) {
-    _logoImg.src = _cachedLogo;
-    _logoImg.style.opacity = '1';
-  }
+  if (_cachedLogo) applyLogo(_cachedLogo);
   fetch('/api/logo').then(r => r.json()).then(d => {
     if (d && d.logo) {
-      localStorage.setItem('terratjo_logo_cache', d.logo);
-      if (_logoImg) { _logoImg.src = d.logo; _logoImg.style.opacity = '1'; }
+      applyLogo(d.logo);
     }
   }).catch(() => {});
 
@@ -1225,17 +1220,17 @@ function updateTopBar() {
 
 // ── Logo Upload ───────────────────────────────────────────────────
 function applyLogo(dataUrl) {
-  const src = dataUrl || '/logo.png';
-  const imgTag = `<img src="${src}" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">`;
-
-  ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle'].forEach(id => {
-    const el = $(id); if (el) el.innerHTML = imgTag;
-  });
-  // Update login modal logo and refresh localStorage cache
-  const loginLogoImg = document.getElementById('login-logo-img');
-  if (loginLogoImg) { loginLogoImg.src = src; loginLogoImg.style.opacity = '1'; }
-  if (dataUrl) localStorage.setItem('terratjo_logo_cache', dataUrl);
-  else localStorage.removeItem('terratjo_logo_cache');
+  if (dataUrl) {
+    const imgTag = `<img src="${dataUrl}" alt="logo" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">`;
+    ['sidebar-logo-box','settings-logo-circle','sip-logo-box','ipm-logo-circle','login-logo-box'].forEach(id => {
+      const el = $(id); if (el) el.innerHTML = imgTag;
+    });
+    localStorage.setItem('terratjo_logo_cache', dataUrl);
+  } else {
+    localStorage.removeItem('terratjo_logo_cache');
+    const box = $('login-logo-box');
+    if (box) { box.innerHTML = `<i data-lucide="building-2"></i>`; lucide.createIcons(); }
+  }
 
   const removeBtn = $('btn-remove-logo');
   if (removeBtn) removeBtn.style.display = dataUrl ? 'inline-flex' : 'none';
