@@ -597,6 +597,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
     }
 
     /* ── MOBILE CARD FORMATTING FOR GUESTS DATA ────────────── */
+    #page-guests .inventory-header {
+        padding-left: 2px;
+        padding-right: 2px;
+        margin-bottom: 14px;
+    }
+    #page-guests .inventory-header p {
+        font-size: 11.5px !important;
+        color: var(--text-light);
+        margin-top: 2px;
+        line-height: 1.3;
+    }
     #page-guests .data-table tbody tr {
         display: flex;
         flex-direction: column;
