@@ -1021,7 +1021,7 @@ function openForm(type, dateStr, prefillId) {
   } else {
     $('form-modal-title').textContent = type==='booking'?'New Booking':'New Quotation';
     $('booking-form').reset(); $('booking-form').dataset.editId = '';
-    $('form-checkin').value = dateStr||fmt(today); $('form-checkout').value = fmt(addD(new Date($('form-checkin').value), 1));
+    $('form-checkin').value = dateStr||_todayJkt; $('form-checkout').value = fmt(addD(new Date($('form-checkin').value), 1));
     $('form-price').value = getRoomRate($('form-room').value||app.rooms[0]?.id||'r1', $('form-checkin').value, $('form-checkout').value); $('form-guests').value=1; $('form-cleaning').value=0; $('form-deposit').value=0; $('form-tax').value=0; $('form-checkin-time').value='14:00'; $('form-checkout-time').value='12:00';
     populatePromoSelect($('form-room').value||app.rooms[0]?.id||'');
   }
