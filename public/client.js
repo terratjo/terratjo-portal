@@ -13,7 +13,7 @@ let calYear = _jY, calMonth = _jM0 - 1; // calMonth is 0-indexed
 const LANG = {
   en: {
     'nav.calendar':'Calendar','nav.bookings':'All Bookings','nav.invoices':'Invoices & Quotes',
-    'nav.reports':'Reports','nav.inventory':'Inventory','nav.settings':'Settings',
+    'nav.reports':'Reports','nav.inventory':'Inventory & Promo','nav.settings':'Settings',
     'nav.header.documents':'DOCUMENTS','nav.header.analytics':'ANALYTICS',
     'nav.header.property':'PROPERTY','nav.header.language':'LANGUAGE',
     'btn.new-booking':'New Booking','btn.new-quotation':'New Quotation','btn.cancel':'Cancel',
@@ -68,7 +68,7 @@ const LANG = {
   },
   id: {
     'nav.calendar':'Kalender','nav.bookings':'Semua Pemesanan','nav.invoices':'Faktur & Penawaran',
-    'nav.reports':'Laporan','nav.inventory':'Inventaris','nav.settings':'Pengaturan',
+    'nav.reports':'Laporan','nav.inventory':'Inventaris & Promo','nav.settings':'Pengaturan',
     'nav.header.documents':'DOKUMEN','nav.header.analytics':'ANALITIK',
     'nav.header.property':'PROPERTI','nav.header.language':'BAHASA',
     'btn.new-booking':'Pemesanan Baru','btn.new-quotation':'Penawaran Baru','btn.cancel':'Batal',
@@ -313,7 +313,7 @@ function navigate(pageId) {
   if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (pageId === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
-  if (pageId === 'inventory') renderInventory();
+  if (pageId === 'inventory') { renderInventory(); renderPromos(); }
   if (pageId === 'guests') renderGuests($('guest-search')?.value || '');
   if (pageId === 'settings') renderSettings();
   document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
@@ -411,7 +411,7 @@ function refreshCurrentPage() {
   if (prevPage === 'all-bookings') renderBookings(_currentBookingFilter);
   if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (prevPage === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
-  if (prevPage === 'inventory') renderInventory();
+  if (prevPage === 'inventory') { renderInventory(); renderPromos(); }
   if (prevPage === 'guests') renderGuests($('guest-search')?.value || '');
   if (prevPage === 'settings') renderSettings();
 }
@@ -950,7 +950,7 @@ function renderSettings() {
     if (el) el.value = v;
   });
   updateSIP();
-  renderPromos();
+
 }
 function updateSIP() {
   $('sip-brand').textContent = $('setting-brand')?.value || '';

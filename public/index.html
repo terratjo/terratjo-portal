@@ -57,7 +57,7 @@
             </div>
             <div class="nav-section">
                 <h3 data-i18n="nav.header.property">PROPERTY</h3>
-                <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> <span data-i18n="nav.inventory">Inventory</span></a>
+                <a href="#" class="nav-item" data-page="inventory"><i data-lucide="box"></i> <span data-i18n="nav.inventory">Inventory & Promo</span></a>
                 <a href="#" class="nav-item" data-page="guests"><i data-lucide="users"></i> <span>Guests Data</span></a>
                 <a href="#" class="nav-item" data-page="settings"><i data-lucide="settings"></i> <span data-i18n="nav.settings">Settings</span></a>
             </div>
@@ -213,6 +213,20 @@
                     <button class="btn btn-primary" id="btn-add-room"><i data-lucide="plus"></i> <span data-i18n="inv.add_room">Add Room</span></button>
                 </div>
                 <div class="rooms-list" id="rooms-list"></div>
+
+                <!-- Promo Section -->
+                <div style="margin-top:28px;">
+                    <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:28px;box-shadow:var(--shadow-sm);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                            <div>
+                                <h3 style="font-family:'CustomFont', sans-serif;font-size:18px;margin-bottom:4px;" data-i18n="promo.title">Promo Management</h3>
+                                <p style="color:var(--text-light);font-size:13px;" data-i18n="promo.subtitle">Set discounts by room and period. Staff selects promos when creating bookings.</p>
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="btn-add-promo" style="white-space:nowrap;"><i data-lucide="plus"></i> <span data-i18n="promo.add">Add Promo</span></button>
+                        </div>
+                        <div id="promos-list"><div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div></div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -362,19 +376,6 @@
                 </div>
             </div>
 
-            <!-- Promo Section -->
-            <div style="max-width:900px;margin-top:20px;padding-bottom:40px;margin-left:auto;margin-right:auto;">
-                <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:28px;box-shadow:var(--shadow-sm);">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                        <div>
-                            <h3 style="font-family:'CustomFont', sans-serif;font-size:18px;margin-bottom:4px;" data-i18n="promo.title">&#127881; Promo Management</h3>
-                            <p style="color:var(--text-light);font-size:13px;" data-i18n="promo.subtitle">Set discounts by room and period. Staff selects promos when creating bookings.</p>
-                        </div>
-                        <button class="btn btn-primary btn-sm" id="btn-add-promo" style="white-space:nowrap;"><i data-lucide="plus"></i> <span data-i18n="promo.add">Add Promo</span></button>
-                    </div>
-                    <div id="promos-list"><div class="promo-empty">No promos yet. Click "Add Promo" to create one.</div></div>
-                </div>
-            </div>
         </main>
 
 
