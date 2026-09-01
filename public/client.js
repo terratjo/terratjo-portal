@@ -312,7 +312,7 @@ function navigate(pageId) {
   if (pageId === 'calendar') renderCalendar();
   if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
-  if (pageId === 'reports') renderReports('all');
+  if (pageId === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
   if (pageId === 'inventory') renderInventory();
   if (pageId === 'guests') renderGuests($('guest-search')?.value || '');
   if (pageId === 'settings') renderSettings();
@@ -410,7 +410,7 @@ function refreshCurrentPage() {
   if (prevPage === 'calendar') renderCalendar();
   if (prevPage === 'all-bookings') renderBookings(_currentBookingFilter);
   if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
-  if (prevPage === 'reports') renderReports('all');
+  if (prevPage === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
   if (prevPage === 'inventory') renderInventory();
   if (prevPage === 'guests') renderGuests($('guest-search')?.value || '');
   if (prevPage === 'settings') renderSettings();
@@ -741,17 +741,50 @@ setInterval(() => {
     loadData().then(() => { renderBookings(_currentBookingFilter); renderInvoices(_currentInvoiceFilter); });
   }
 }, 1000);
+let _reportsMonth = ''; // YYYY-MM, empty = current month
+
+function populateReportsMonthSelect() {
+  const sel = $('reports-month-select'); if (!sel) return;
+  // Collect unique YYYY-MM values from bookings (use createdAt date)
+  const months = new Set();
+  app.bookings.forEach(b => {
+    const d = (b.createdAt || b.checkin || '').split(/[T ]/)[0]; // YYYY-MM-DD
+    if (d && d.length >= 7) months.add(d.substring(0, 7));
+  });
+  // Always include the current month
+  const now = new Date();
+  const curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  months.add(curMonth);
+  // Sort descending (newest first)
+  const sorted = [...months].sort((a, b) => b.localeCompare(a));
+  // Format month label: "September 2026"
+  const fmtMonth = ym => {
+    const [y, m] = ym.split('-');
+    const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return names[parseInt(m, 10) - 1] + ' ' + y;
+  };
+  sel.innerHTML = sorted.map(ym => `<option value="${ym}"${ym === curMonth ? ' selected' : ''}>${fmtMonth(ym)}</option>`).join('');
+  _reportsMonth = curMonth;
+}
+
+function bookingInMonth(b, ym) {
+  if (!ym) return true;
+  const d = (b.createdAt || b.checkin || '').split(/[T ]/)[0];
+  return d && d.substring(0, 7) === ym;
+}
 
 function renderReports(filter) {
-  const confirmed = app.bookings.filter(b => b.status === 'confirmed');
-  const awaiting = app.bookings.filter(b => b.status === 'awaiting' || (b.status === 'quotation' && effStatus(b) !== 'expired'));
-  const quotations = app.bookings.filter(b => b.type === 'quotation');
-  const cancelled = app.bookings.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
+  // Filter bookings by selected month
+  const mb = app.bookings.filter(b => bookingInMonth(b, _reportsMonth));
+  const confirmed = mb.filter(b => b.status === 'confirmed');
+  const awaiting = mb.filter(b => b.status === 'awaiting' || (b.status === 'quotation' && effStatus(b) !== 'expired'));
+  const quotations = mb.filter(b => b.type === 'quotation');
+  const cancelled = mb.filter(b => b.status === 'cancelled' || effStatus(b) === 'expired');
   // Revenue = confirmed invoices + cancelled invoices where guest paid and no refund was given
-  const bRev = app.bookings.filter(b => b.type === 'invoice' && (b.status !== 'cancelled' || b.noRefund)).reduce((s, b) => s + calcTotal(b), 0);
+  const bRev = mb.filter(b => b.type === 'invoice' && (b.status !== 'cancelled' || b.noRefund)).reduce((s, b) => s + calcTotal(b), 0);
   $('reports-stat-cards').innerHTML = `<div class="stat-card"><div class="stat-card-label">${t('rep.rev')}</div><div class="stat-card-value">${idr(bRev)}</div><div class="stat-card-sub green">${t('rep.from_bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.confirmed')}</div><div class="stat-card-value">${confirmed.length}</div><div class="stat-card-sub">${t('rep.bookings')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.awaiting')}</div><div class="stat-card-value">${awaiting.length}</div><div class="stat-card-sub">${t('rep.need_follow')}</div></div><div class="stat-card"><div class="stat-card-label">${t('rep.quotations')}</div><div class="stat-card-value">${quotations.length}</div><div class="stat-card-sub">${cancelled.length} ${t('rep.cancelled_exp')}</div></div>`;
   const tb = $('reports-tbody'); if (!tb) return;
-  const rows = app.bookings
+  const rows = mb
     .filter(b => !_currentSearch || (b.guestName||'').toLowerCase().includes(_currentSearch) || (b.id||'').toLowerCase().includes(_currentSearch))
     .filter(b => filter === 'all' || (filter === 'booking' && b.type === 'invoice') || (filter === 'quotation' && b.type === 'quotation'));
   tb.innerHTML = '';
@@ -764,6 +797,7 @@ function renderReports(filter) {
   const grandTotal = rows.reduce((s, b) => s + calcTotal(b), 0);
   $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} value: <strong>${idr(bVal)}</strong></span><span class="grand">Grand Total: ${idr(grandTotal)}</span>`;
 }
+$('reports-month-select')?.addEventListener('change', e => { _reportsMonth = e.target.value; renderReports(document.querySelector('#reports-tabs .tab-btn.active')?.dataset.filter || 'all'); });
 $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#reports-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderReports(e.target.dataset.filter); });
 
 // ── Inventory ─────────────────────────────────────────────────────
