@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'terratjo-secure-secret-2026';
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '30mb' }));
 
 // ── Database (Turso LibSQL — works locally with file: and in cloud with libsql:)
 const db = createClient({

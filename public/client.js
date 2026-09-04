@@ -1538,10 +1538,24 @@ $('btn-confirm-payment')?.addEventListener('click', async () => {
   try {
     if (fileInput.files && fileInput.files[0]) {
       const file = fileInput.files[0];
+      if (file.size > 20 * 1024 * 1024) { showToast('File too large (max 20 MB)'); confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm as Paid'; return; }
+      // Compress image via canvas to keep payload small
       paymentProofBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = e => reject(e);
+        reader.onerror = reject;
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Invalid image'));
+          img.onload = () => {
+            const MAX = 1200;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(c.toDataURL('image/jpeg', 0.7));
+          };
+          img.src = reader.result;
+        };
         reader.readAsDataURL(file);
       });
     }
