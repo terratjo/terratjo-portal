@@ -292,7 +292,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .room-card:hover{box-shadow:var(--shadow-md);}
 .room-card-info h3{font-size:16px;font-weight:700;margin-bottom:4px;}
 .room-card-info p{font-size:13px;color:var(--text-mid);margin-bottom:2px;}
-.room-card-actions{display:flex;gap:8px;}
+.room-card-actions{display:flex;gap:8px;justify-content:flex-end;}
 
 /* ── ROOM INVENTORY DETAIL ────────────────────────────── */
 .ri-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
