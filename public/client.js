@@ -312,7 +312,7 @@ function navigate(pageId) {
   if (pageId === 'calendar') renderCalendar();
   if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
-  if (pageId === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
+  if (pageId === 'reports') { populateReportsMonthSelect(); populateReportsRoomSelect(); renderReports('all'); }
   if (pageId === 'inventory') { renderInventory(); renderPromos(); }
   if (pageId === 'guests') renderGuests($('guest-search')?.value || '');
   if (pageId === 'settings') renderSettings();
@@ -410,7 +410,7 @@ function refreshCurrentPage() {
   if (prevPage === 'calendar') renderCalendar();
   if (prevPage === 'all-bookings') renderBookings(_currentBookingFilter);
   if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
-  if (prevPage === 'reports') { populateReportsMonthSelect(); renderReports('all'); }
+  if (prevPage === 'reports') { populateReportsMonthSelect(); populateReportsRoomSelect(); renderReports('all'); }
   if (prevPage === 'inventory') { renderInventory(); renderPromos(); }
   if (prevPage === 'guests') renderGuests($('guest-search')?.value || '');
   if (prevPage === 'settings') renderSettings();
@@ -742,6 +742,7 @@ setInterval(() => {
   }
 }, 1000);
 let _reportsMonth = ''; // YYYY-MM, empty = current month
+let _reportsRoom = ''; // room ID, empty = all rooms
 
 function populateReportsMonthSelect() {
   const sel = $('reports-month-select'); if (!sel) return;
@@ -767,6 +768,12 @@ function populateReportsMonthSelect() {
   _reportsMonth = curMonth;
 }
 
+function populateReportsRoomSelect() {
+  const sel = $('reports-room-select'); if (!sel) return;
+  sel.innerHTML = '<option value="">All Rooms</option>' + app.rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  _reportsRoom = '';
+}
+
 function bookingInMonth(b, ym) {
   if (!ym) return true;
   const d = (b.createdAt || b.checkin || '').split(/[T ]/)[0];
@@ -774,8 +781,8 @@ function bookingInMonth(b, ym) {
 }
 
 function renderReports(filter) {
-  // Filter bookings by selected month
-  const mb = app.bookings.filter(b => bookingInMonth(b, _reportsMonth));
+  // Filter bookings by selected month and room
+  const mb = app.bookings.filter(b => bookingInMonth(b, _reportsMonth) && (!_reportsRoom || b.room === _reportsRoom));
   const confirmed = mb.filter(b => b.status === 'confirmed');
   const awaiting = mb.filter(b => b.status === 'awaiting' || (b.status === 'quotation' && effStatus(b) !== 'expired'));
   const quotations = mb.filter(b => b.type === 'quotation');
@@ -798,6 +805,7 @@ function renderReports(filter) {
   $('reports-totals').innerHTML = `<span>${t('rep.quotations')} value: <strong>${idr(qVal)}</strong></span><span>${t('rep.bookings')} value: <strong>${idr(bVal)}</strong></span><span class="grand">Grand Total: ${idr(grandTotal)}</span>`;
 }
 $('reports-month-select')?.addEventListener('change', e => { _reportsMonth = e.target.value; renderReports(document.querySelector('#reports-tabs .tab-btn.active')?.dataset.filter || 'all'); });
+$('reports-room-select')?.addEventListener('change', e => { _reportsRoom = e.target.value; renderReports(document.querySelector('#reports-tabs .tab-btn.active')?.dataset.filter || 'all'); });
 $('reports-tabs')?.addEventListener('click', e => { if (!e.target.matches('.tab-btn')) return; document.querySelectorAll('#reports-tabs .tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderReports(e.target.dataset.filter); });
 
 // ── Inventory ─────────────────────────────────────────────────────
