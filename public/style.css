@@ -303,7 +303,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .ri-summary-card .ri-num{font-size:22px;font-weight:700;color:var(--text-dark);}
 .ri-summary-card .ri-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
 .ri-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.btn-inventory{background:var(--primary);color:var(--text-dark);border:1.5px solid var(--primary);font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;transition:all .2s;}
+.btn-inventory{background:var(--primary);color:var(--text-dark);border:1.5px solid var(--primary);font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;width:100%;transition:all .2s;}
 .btn-inventory:hover{background:#e6b400;border-color:#e6b400;}
 .condition-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;display:inline-block;}
 .condition-badge.good{background:#ecfdf5;color:#065f46;}

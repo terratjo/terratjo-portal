@@ -835,7 +835,7 @@ function renderInventory() {
         </div>
         <p style="margin-top:6px;">${r.desc||''}</p>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
         <div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">${t('inv.edit')}</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">${t('inv.delete')}</button></div>
         <button class="btn-inventory" onclick="openRoomInventory('${r.id}')">Inventory</button>
       </div>
