@@ -264,30 +264,39 @@
 
         <!-- MODAL: Add/Edit Inventory Item -->
         <div class="modal-overlay" id="inv-item-modal">
-            <div class="modal" style="max-width:480px;">
-                <div class="modal-header"><h3 id="inv-item-modal-title">Add Item</h3><button class="modal-close" onclick="$('inv-item-modal').classList.remove('active')">&times;</button></div>
+            <div class="modal form-modal" style="max-width:480px;">
+                <div class="modal-header">
+                    <h3 id="inv-item-modal-title">Add Item</h3>
+                    <button class="btn-icon" onclick="$('inv-item-modal').classList.remove('active')"><i data-lucide="x"></i></button>
+                </div>
                 <div class="modal-body">
-                    <input type="hidden" id="inv-item-edit-id">
-                    <div class="form-group"><label>Item Name *</label><input type="text" id="inv-item-name" class="form-control" placeholder="e.g. Bath Towel"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Category</label>
-                            <select id="inv-item-category" class="form-control">
-                                <option>Bedroom</option><option>Bathroom</option><option>Kitchen</option>
-                                <option>Living Room</option><option>Electronics</option><option>Outdoor</option>
-                                <option>Safety</option><option>General</option>
+                    <form id="inv-item-form" autocomplete="off" onsubmit="event.preventDefault();saveInvItem();">
+                        <input type="hidden" id="inv-item-edit-id">
+                        <div class="form-group"><label>Item Name *</label><input type="text" id="inv-item-name" placeholder="e.g. Bath Towel" required></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Category</label>
+                                <select id="inv-item-category">
+                                    <option>Bedroom</option><option>Bathroom</option><option>Kitchen</option>
+                                    <option>Living Room</option><option>Electronics</option><option>Outdoor</option>
+                                    <option>Safety</option><option>General</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Quantity</label><input type="number" id="inv-item-qty" value="1" min="0"></div>
+                        </div>
+                        <div class="form-group"><label>Condition</label>
+                            <select id="inv-item-condition">
+                                <option>Good</option><option>Fair</option><option>Needs Replacement</option><option>New</option>
                             </select>
                         </div>
-                        <div class="form-group"><label>Quantity</label><input type="number" id="inv-item-qty" class="form-control" value="1" min="0"></div>
-                    </div>
-                    <div class="form-group"><label>Condition</label>
-                        <select id="inv-item-condition" class="form-control">
-                            <option>Good</option><option>Fair</option><option>Needs Replacement</option><option>New</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>Notes</label><textarea id="inv-item-notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea></div>
+                        <div class="form-group"><label>Notes</label><textarea id="inv-item-notes" rows="2" placeholder="Optional notes..."></textarea></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="$('inv-item-modal').classList.remove('active')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Item</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer"><button class="btn btn-outline" onclick="$('inv-item-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="saveInvItem()">Save Item</button></div>
             </div>
+        </div>
         </div>
 
         <!-- PAGE: GUESTS DATA -->
