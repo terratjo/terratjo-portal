@@ -236,6 +236,60 @@
             </div>
         </main>
 
+        <!-- PAGE: ROOM INVENTORY DETAIL -->
+        <main class="page-content hidden" id="page-room-inventory">
+            <div class="section-container">
+                <div class="ri-header">
+                    <button class="btn btn-outline btn-sm" id="btn-back-inventory" onclick="navigate('inventory')"><i data-lucide="arrow-left"></i> Back</button>
+                    <div class="ri-room-info">
+                        <h2 id="ri-room-name">Room Name</h2>
+                        <p id="ri-room-meta" style="color:var(--text-light);font-size:13px;margin-top:2px;"></p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="btn-add-inv-item" onclick="openInvItemModal(null)"><i data-lucide="plus"></i> Add Item</button>
+                </div>
+                <div class="ri-summary" id="ri-summary"></div>
+                <div class="ri-filter-tabs" id="ri-filter-tabs">
+                    <button class="tab-btn active" data-cat="all">All</button>
+                </div>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ITEM NAME</th><th>CATEGORY</th><th>QTY</th><th>CONDITION</th><th>NOTES</th><th>ACTIONS</th>
+                        </tr></thead>
+                        <tbody id="ri-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODAL: Add/Edit Inventory Item -->
+        <div class="modal-overlay" id="inv-item-modal">
+            <div class="modal" style="max-width:480px;">
+                <div class="modal-header"><h3 id="inv-item-modal-title">Add Item</h3><button class="modal-close" onclick="$('inv-item-modal').classList.remove('active')">&times;</button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="inv-item-edit-id">
+                    <div class="form-group"><label>Item Name *</label><input type="text" id="inv-item-name" class="form-control" placeholder="e.g. Bath Towel"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Category</label>
+                            <select id="inv-item-category" class="form-control">
+                                <option>Bedroom</option><option>Bathroom</option><option>Kitchen</option>
+                                <option>Living Room</option><option>Electronics</option><option>Outdoor</option>
+                                <option>Safety</option><option>General</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Quantity</label><input type="number" id="inv-item-qty" class="form-control" value="1" min="0"></div>
+                    </div>
+                    <div class="form-group"><label>Condition</label>
+                        <select id="inv-item-condition" class="form-control">
+                            <option>Good</option><option>Fair</option><option>Needs Replacement</option><option>New</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Notes</label><textarea id="inv-item-notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-outline" onclick="$('inv-item-modal').classList.remove('active')">Cancel</button><button class="btn btn-primary" onclick="saveInvItem()">Save Item</button></div>
+            </div>
+        </div>
+
         <!-- PAGE: GUESTS DATA -->
         <main class="page-content hidden" id="page-guests">
             <div class="section-container">

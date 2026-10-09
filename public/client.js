@@ -836,6 +836,7 @@ function renderInventory() {
         <p style="margin-top:6px;">${r.desc||''}</p>
       </div>
       <div class="room-card-actions"><button class="btn btn-outline btn-sm" onclick="openEditRoom('${r.id}')">${t('inv.edit')}</button><button class="btn btn-danger btn-sm" onclick="deleteRoom('${r.id}')">${t('inv.delete')}</button></div>
+      <div style="margin-top:8px;"><button class="btn-inventory" onclick="openRoomInventory('${r.id}')"><i data-lucide="clipboard-list"></i> Inventory</button></div>
     </div>`;
   });
 }
@@ -1589,6 +1590,124 @@ $('payment-proof-file')?.addEventListener('change', function() {
       p.innerHTML = `Drag & drop a file or <span>browse</span>`;
   }
 });
+
+// ── Room Inventory Detail ─────────────────────────────────────────
+let _currentRoomInvId = '';
+let _roomInvItems = [];
+let _roomInvCatFilter = 'all';
+
+window.openRoomInventory = async (roomId) => {
+  _currentRoomInvId = roomId;
+  _roomInvCatFilter = 'all';
+  // Hide all pages, show room-inventory page
+  document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+  $('page-room-inventory')?.classList.remove('hidden');
+  const room = app.rooms.find(r => r.id === roomId);
+  if (room) {
+    $('ri-room-name').textContent = room.name + ' — Inventory';
+    $('ri-room-meta').textContent = (room.location || '') + ' · Max ' + room.capacity + ' guests';
+  }
+  try {
+    _roomInvItems = await api.get(`/rooms/${roomId}/inventory`);
+  } catch(e) { _roomInvItems = []; showToast('Failed to load inventory'); }
+  renderRoomInventory();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+function renderRoomInventory() {
+  const items = _roomInvCatFilter === 'all' ? _roomInvItems : _roomInvItems.filter(i => i.category === _roomInvCatFilter);
+  // Summary cards
+  const totalItems = _roomInvItems.reduce((s, i) => s + (i.quantity || 0), 0);
+  const categories = [...new Set(_roomInvItems.map(i => i.category))];
+  const needsReplace = _roomInvItems.filter(i => i.condition === 'Needs Replacement').length;
+  $('ri-summary').innerHTML = `
+    <div class="ri-summary-card"><div class="ri-num">${_roomInvItems.length}</div><div class="ri-label">Items</div></div>
+    <div class="ri-summary-card"><div class="ri-num">${totalItems}</div><div class="ri-label">Total Qty</div></div>
+    <div class="ri-summary-card"><div class="ri-num">${categories.length}</div><div class="ri-label">Categories</div></div>
+    <div class="ri-summary-card" style="${needsReplace > 0 ? 'border-color:#fca5a5;' : ''}"><div class="ri-num" style="${needsReplace > 0 ? 'color:#dc2626;' : ''}">${needsReplace}</div><div class="ri-label">Needs Replace</div></div>`;
+  // Category filter tabs
+  const tabs = $('ri-filter-tabs');
+  tabs.innerHTML = `<button class="tab-btn ${_roomInvCatFilter === 'all' ? 'active' : ''}" data-cat="all">All</button>` +
+    categories.sort().map(c => `<button class="tab-btn ${_roomInvCatFilter === c ? 'active' : ''}" data-cat="${c}">${c}</button>`).join('');
+  tabs.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+    _roomInvCatFilter = btn.dataset.cat;
+    renderRoomInventory();
+  }));
+  // Table
+  const tb = $('ri-tbody'); if (!tb) return;
+  if (items.length === 0) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-light);">No inventory items yet. Click "Add Item" to start.</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(i => {
+    const condClass = i.condition.toLowerCase().replace(/\s+/g, '-');
+    return `<tr>
+      <td><strong>${i.itemName}</strong></td>
+      <td><span style="font-size:12px;">${i.category}</span></td>
+      <td style="text-align:center;font-weight:600;">${i.quantity}</td>
+      <td><span class="condition-badge ${condClass}">${i.condition}</span></td>
+      <td style="font-size:12px;color:var(--text-light);">${i.notes || '—'}</td>
+      <td><div style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm" onclick="openInvItemModal('${i.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteInvItem('${i.id}')">Delete</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+window.openInvItemModal = (itemId) => {
+  $('inv-item-edit-id').value = itemId || '';
+  if (itemId) {
+    const item = _roomInvItems.find(i => i.id === itemId);
+    if (!item) return;
+    $('inv-item-modal-title').textContent = 'Edit Item';
+    $('inv-item-name').value = item.itemName;
+    $('inv-item-category').value = item.category;
+    $('inv-item-qty').value = item.quantity;
+    $('inv-item-condition').value = item.condition;
+    $('inv-item-notes').value = item.notes || '';
+  } else {
+    $('inv-item-modal-title').textContent = 'Add Item';
+    $('inv-item-name').value = '';
+    $('inv-item-category').value = 'Bedroom';
+    $('inv-item-qty').value = 1;
+    $('inv-item-condition').value = 'Good';
+    $('inv-item-notes').value = '';
+  }
+  $('inv-item-modal').classList.add('active');
+};
+
+window.saveInvItem = async () => {
+  const itemName = $('inv-item-name').value.trim();
+  if (!itemName) { showToast('Item name is required'); return; }
+  const data = {
+    itemName,
+    category: $('inv-item-category').value,
+    quantity: parseInt($('inv-item-qty').value) || 1,
+    condition: $('inv-item-condition').value,
+    notes: $('inv-item-notes').value.trim()
+  };
+  const editId = $('inv-item-edit-id').value;
+  try {
+    if (editId) {
+      await api.put(`/rooms/${_currentRoomInvId}/inventory/${editId}`, data);
+      showToast('Item updated ✓');
+    } else {
+      await api.post(`/rooms/${_currentRoomInvId}/inventory`, data);
+      showToast('Item added ✓');
+    }
+    $('inv-item-modal').classList.remove('active');
+    _roomInvItems = await api.get(`/rooms/${_currentRoomInvId}/inventory`);
+    renderRoomInventory();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+window.deleteInvItem = async (itemId) => {
+  if (!confirm('Delete this inventory item?')) return;
+  try {
+    await api.del(`/rooms/${_currentRoomInvId}/inventory/${itemId}`);
+    showToast('Item deleted');
+    _roomInvItems = await api.get(`/rooms/${_currentRoomInvId}/inventory`);
+    renderRoomInventory();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
 
 // ── Guests Data ───────────────────────────────────────────────────
 // Match a guest to bookings by name + email (mirrors the backend dedup key)

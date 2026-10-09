@@ -48,6 +48,12 @@ async function initDB() {
       id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, phone TEXT, address TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS room_inventory (
+      id TEXT PRIMARY KEY, room_id TEXT NOT NULL, item_name TEXT NOT NULL,
+      category TEXT DEFAULT 'General', quantity INTEGER DEFAULT 1,
+      condition TEXT DEFAULT 'Good', notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
   await seedData();
 }
@@ -471,6 +477,32 @@ app.put('/api/guests/:id', auth, async (req, res) => {
 });
 app.delete('/api/guests/:id', auth, async (req, res) => {
   await db.execute({ sql:'DELETE FROM guests WHERE id=?', args:[req.params.id] });
+  res.json({ success:true });
+});
+
+// ── Room Inventory ────────────────────────────────────────────────
+app.get('/api/rooms/:roomId/inventory', auth, async (req, res) => {
+  const { rows } = await db.execute({ sql:'SELECT * FROM room_inventory WHERE room_id=? ORDER BY category, item_name', args:[req.params.roomId] });
+  res.json(rows.map(r => ({ id:r.id, roomId:r.room_id, itemName:r.item_name, category:r.category, quantity:r.quantity, condition:r.condition, notes:r.notes||'', createdAt:r.created_at })));
+});
+app.post('/api/rooms/:roomId/inventory', auth, async (req, res) => {
+  const { itemName, category, quantity, condition, notes } = req.body;
+  if (!itemName) return res.status(400).json({ error:'Item name required' });
+  const id = 'INV-' + Date.now();
+  await db.execute({ sql:'INSERT INTO room_inventory (id,room_id,item_name,category,quantity,condition,notes) VALUES (?,?,?,?,?,?,?)',
+    args:[id, req.params.roomId, itemName, category||'General', quantity||1, condition||'Good', notes||''] });
+  res.status(201).json({ success:true, id });
+});
+app.put('/api/rooms/:roomId/inventory/:id', auth, async (req, res) => {
+  const { itemName, category, quantity, condition, notes } = req.body;
+  if (!itemName) return res.status(400).json({ error:'Item name required' });
+  const r = await db.execute({ sql:'UPDATE room_inventory SET item_name=?,category=?,quantity=?,condition=?,notes=? WHERE id=? AND room_id=?',
+    args:[itemName, category||'General', quantity||1, condition||'Good', notes||'', req.params.id, req.params.roomId] });
+  if (!r.rowsAffected) return res.status(404).json({ error:'Not found' });
+  res.json({ success:true });
+});
+app.delete('/api/rooms/:roomId/inventory/:id', auth, async (req, res) => {
+  await db.execute({ sql:'DELETE FROM room_inventory WHERE id=? AND room_id=?', args:[req.params.id, req.params.roomId] });
   res.json({ success:true });
 });
 

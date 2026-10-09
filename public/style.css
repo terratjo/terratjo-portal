@@ -294,6 +294,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg-light);color:var(--text-
 .room-card-info p{font-size:13px;color:var(--text-mid);margin-bottom:2px;}
 .room-card-actions{display:flex;gap:8px;}
 
+/* ── ROOM INVENTORY DETAIL ────────────────────────────── */
+.ri-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.ri-room-info{flex:1;min-width:0;}
+.ri-room-info h2{font-size:20px;font-weight:700;}
+.ri-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+.ri-summary-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:14px 16px;text-align:center;box-shadow:var(--shadow-sm);}
+.ri-summary-card .ri-num{font-size:22px;font-weight:700;color:var(--text-dark);}
+.ri-summary-card .ri-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.ri-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.btn-inventory{background:var(--primary);color:var(--text-dark);border:1.5px solid var(--primary);font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;transition:all .2s;}
+.btn-inventory:hover{background:#e6b400;border-color:#e6b400;}
+.condition-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;display:inline-block;}
+.condition-badge.good{background:#ecfdf5;color:#065f46;}
+.condition-badge.fair{background:#fffbeb;color:#92400e;}
+.condition-badge.needs-replacement{background:#fef2f2;color:#991b1b;}
+.condition-badge.new{background:#eff6ff;color:#1e40af;}
+@media(max-width:600px){.ri-header{flex-direction:column;align-items:stretch;}.ri-header .btn{width:100%;justify-content:center;}}
+
 /* ── SETTINGS ──────────────────────────────────────────── */
 .settings-container{max-width:900px;margin:0 auto;}
 .settings-card{display:grid;grid-template-columns:1fr 300px;gap:24px;background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);padding:26px;box-shadow:var(--shadow-sm);}
