@@ -313,7 +313,7 @@ function navigate(pageId) {
   if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (pageId === 'reports') { populateReportsMonthSelect(); populateReportsRoomSelect(); renderReports('all'); }
-  if (pageId === 'inventory') { renderInventory(); renderPromos(); }
+  if (pageId === 'inventory') { renderInventory(); renderPromos(); if (typeof lucide !== 'undefined') lucide.createIcons(); }
   if (pageId === 'guests') renderGuests($('guest-search')?.value || '');
   if (pageId === 'settings') renderSettings();
   document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
@@ -411,7 +411,7 @@ function refreshCurrentPage() {
   if (prevPage === 'all-bookings') renderBookings(_currentBookingFilter);
   if (prevPage === 'invoices') renderInvoices(_currentInvoiceFilter);
   if (prevPage === 'reports') { populateReportsMonthSelect(); populateReportsRoomSelect(); renderReports('all'); }
-  if (prevPage === 'inventory') { renderInventory(); renderPromos(); }
+  if (prevPage === 'inventory') { renderInventory(); renderPromos(); if (typeof lucide !== 'undefined') lucide.createIcons(); }
   if (prevPage === 'guests') renderGuests($('guest-search')?.value || '');
   if (prevPage === 'settings') renderSettings();
 }
