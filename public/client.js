@@ -1612,9 +1612,11 @@ let _roomInvCatFilter = 'all';
 window.openRoomInventory = async (roomId, skipHistory) => {
   _currentRoomInvId = roomId;
   _roomInvCatFilter = 'all';
+  _roomInvItems = [];
   // Hide all pages, show room-inventory page
   document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
   $('page-room-inventory')?.classList.remove('hidden');
+  renderRoomInventory();
   const room = app.rooms.find(r => r.id === roomId);
   if (room) {
     $('ri-room-name').textContent = room.name + ' — Inventory';
