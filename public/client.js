@@ -308,7 +308,7 @@ function initSSE() {
 }
 
 // ── Navigation ───────────────────────────────────────────────────
-function navigate(pageId) {
+function navigate(pageId, skipHistory) {
   if (pageId === 'calendar') renderCalendar();
   if (pageId === 'all-bookings') renderBookings(_currentBookingFilter);
   if (pageId === 'invoices') renderInvoices(_currentInvoiceFilter);
@@ -324,7 +324,18 @@ function navigate(pageId) {
   const todayPill = $('today-pill-fixed');
   if (todayPill) todayPill.style.display = pageId === 'calendar' ? 'flex' : 'none';
   prevPage = pageId;
+  if (!skipHistory) history.pushState({ page: pageId }, '', '#' + pageId);
 }
+window.addEventListener('popstate', (e) => {
+  const state = e.state;
+  if (state && state.page === 'room-inventory' && state.roomId) {
+    openRoomInventory(state.roomId, true);
+  } else if (state && state.page) {
+    navigate(state.page, true);
+  } else {
+    navigate('calendar', true);
+  }
+});
 // Search Logic
 function handleSearch(e) {
   _currentSearch = e.target.value.toLowerCase().trim();
@@ -1598,7 +1609,7 @@ let _currentRoomInvId = '';
 let _roomInvItems = [];
 let _roomInvCatFilter = 'all';
 
-window.openRoomInventory = async (roomId) => {
+window.openRoomInventory = async (roomId, skipHistory) => {
   _currentRoomInvId = roomId;
   _roomInvCatFilter = 'all';
   // Hide all pages, show room-inventory page
@@ -1614,6 +1625,7 @@ window.openRoomInventory = async (roomId) => {
   } catch(e) { _roomInvItems = []; showToast('Failed to load inventory'); }
   renderRoomInventory();
   if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (!skipHistory) history.pushState({ page: 'room-inventory', roomId }, '', '#room-inventory');
 };
 
 function renderRoomInventory() {
